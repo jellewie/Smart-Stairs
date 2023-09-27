@@ -1,27 +1,27 @@
 #include <FastLED.h>
-#define StableAnalog_AverageAmount 8
-#define StableAnalog_AnalogResolution 12
-#include "StableAnalog/StableAnalog.h"
+#define AverageAmount 8
+#define AnalogScaler pow(2,(12 - 8))
+#include "avg.h"
+
 struct Step {
-  StableAnalog SA;
   byte SectionLength;
   bool State;
   int StayOnFor;
-  POT StepStatus;
+  AVG Average;
 };
-Step Stair[] = {Step{StableAnalog(39), 25},
-                Step{StableAnalog(34), 27},
-                Step{StableAnalog(35), 27},
-                Step{StableAnalog(32), 26},
-                Step{StableAnalog(33), 27},
-                Step{StableAnalog(25), 25},
-                Step{StableAnalog(26), 24},
-                Step{StableAnalog(27), 26},
-                Step{StableAnalog(14), 27},
-                Step{StableAnalog(13), 26},
-                Step{StableAnalog( 4), 28},
-                Step{StableAnalog(15), 26},
-                Step{StableAnalog(36), 10}
+Step Stair[] = {Step{25},                               //The steps and their LED section length
+                Step{27},
+                Step{27},
+                Step{26},
+                Step{27},
+                Step{25},
+                Step{24},
+                Step{26},
+                Step{27},
+                Step{26},
+                Step{28},
+                Step{26},
+                Step{10}
                };
 const byte PotMinChange = 2;
 const byte PotStick = 2;
@@ -34,6 +34,12 @@ CRGB LEDColorOff = {0, 0, 0};
 CRGB LEDColorIdle = {1, 0, 0};
 const byte PAO_LED = 23;
 const int TotalLEDs = 13 * 30;
+const byte PDO_S0 = 13;                                 //Connections to CD74HC4067
+const byte PDO_S1 = 27;                                 //^
+const byte PDO_S2 = 33;                                 //^
+const byte PDO_S3 = 25;                                 //^
+const byte PAI_Steps = 35;                              //^
+const byte PDO_Enable = 32;                             //^
 
 enum DIRECTIONS {DOWN, UP};
 bool Direction = UP;
@@ -59,7 +65,7 @@ void setup() {
 void loop() {
   static unsigned long LastTime;
   if (TickEveryXms(&LastTime, 1))
-    StairDepleteCheck();
+    StairDepleteCheck();                                //Deplete the LEDs when needed
 
   bool UpdateState = UpdateSteps();
   static bool LastUpdateSteps = !UpdateState;
@@ -84,10 +90,10 @@ void loop() {
   LastUpdateSteps = UpdateState;
 }
 bool UpdateSteps() {
+  //Do we need an LED update?
   bool CountOn = false;
   for (byte i = 0; i < LEDSections; i++) {
-    Stair[i].StepStatus = Stair[i].SA.ReadStable();
-    if (Stair[i].StepStatus.Value >= TriggerThreshold)
+    if (StepRead(i) >= TriggerThreshold)
       CountOn = true;
     if (Stair[i].StayOnFor > 0)
       CountOn = true;
@@ -95,16 +101,16 @@ bool UpdateSteps() {
   return CountOn;
 }
 void StairStepCheck(Step ThisStep, byte _Section) {
-  if (ThisStep.StepStatus.Value < TriggerThreshold) {
-    ThisStep.State = false;
+  if (StepRead(_Section) < TriggerThreshold) {          
+    ThisStep.State = false;                             //Mark this stap as inactive
     return;
   }
-  if (ThisStep.State != true) {
-    Serial.println("St=" + String(_Section));
+  if (ThisStep.State != true) {                         //If this step just got pressed
     ThisStep.State = true;
+    Serial.println("St=" + String(_Section));
     if (_Section != 0 and _Section < lastStep) {
-      Serial.println("DOWN");
       Direction = DOWN;
+      Serial.println("DOWN");
     } else {
       Direction = UP;
       Serial.println("UP");
@@ -164,4 +170,16 @@ bool TickEveryXms(unsigned long * _LastTime, unsigned long _Delay) {
     return true;
   }
   return false;
+}
+byte StepRead(byte Channel) {
+  //using a CD74HC4067
+  digitalWrite(PDO_S0, bitRead(Channel, 0));
+  digitalWrite(PDO_S1, bitRead(Channel, 1));
+  digitalWrite(PDO_S2, bitRead(Channel, 2));
+  digitalWrite(PDO_S3, bitRead(Channel, 3));
+  digitalWrite(PDO_Enable, HIGH);
+  byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
+
+  digitalWrite(PDO_Enable, LOW);
+  return ReturnValue;
 }

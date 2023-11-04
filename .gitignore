@@ -1,0 +1,7 @@
+#====================
+#Don't include files
+#====================
+##Output files
+*.bin
+##Local files
+_Local/

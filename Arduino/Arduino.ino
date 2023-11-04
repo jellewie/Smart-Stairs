@@ -21,7 +21,7 @@ Step Stair[] = {Step{25},                               //The steps and their LE
                 Step{26},
                 Step{28},
                 Step{26},
-                Step{10}
+                Step{25}
                };
 const byte PotMinChange = 2;
 const byte PotStick = 2;
@@ -32,7 +32,7 @@ CRGB LEDColorOn = {5, 2, 2};
 CRGB LEDColorNextOn = {2, 1, 1};
 CRGB LEDColorOff = {0, 0, 0};
 CRGB LEDColorIdle = {1, 0, 0};
-const byte PAO_LED = 23;
+const byte PAO_LED = 5;
 const int TotalLEDs = 13 * 30;
 const byte PDO_S0 = 13;                                 //Connections to CD74HC4067
 const byte PDO_S1 = 27;                                 //^
@@ -66,6 +66,7 @@ void setup() {
   fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);
   FastLED.show();
   Serial.println("Booted");
+  FastLED.setBrightness(255);
 }
 void loop() {
   static unsigned long LastTime;

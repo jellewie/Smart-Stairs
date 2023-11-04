@@ -39,7 +39,7 @@ const byte PDO_S1 = 27;                                 //^
 const byte PDO_S2 = 33;                                 //^
 const byte PDO_S3 = 25;                                 //^
 const byte PAI_Steps = 35;                              //^
-const byte PDO_Enable = 32;                             //^
+const byte PDO_Enable = 32;                             //^ LOW=Multiplexer EBABLED
 
 enum DIRECTIONS {DOWN, UP};
 bool Direction = UP;
@@ -50,9 +50,14 @@ byte ExtraDirection = 1;
 CRGB LEDs[TotalLEDs];
 #define LED_TYPE WS2812B
 void setup() {
-
   Serial.begin(115200);
-
+  pinMode(PDO_S0, OUTPUT);
+  pinMode(PDO_S1, OUTPUT);
+  pinMode(PDO_S2, OUTPUT);
+  pinMode(PDO_S3, OUTPUT);
+  pinMode(PDO_Enable, OUTPUT);
+  digitalWrite(PDO_Enable, LOW);
+  pinMode(PAI_Steps, INPUT);
   FastLED.addLeds<LED_TYPE, PAO_LED, GRB>(LEDs, TotalLEDs);
   fill_solid(&(LEDs[0]), TotalLEDs, CRGB(1, 1, 1));
   FastLED.show();
@@ -80,7 +85,7 @@ void loop() {
       UpdateLEDs = true;
     }
     for (byte i = 0; i < LEDSections; i++) {
-      StairStepCheck(Stair[i], i);
+      StairStepCheck(&Stair[i], i);
     }
   }
   if (UpdateLEDs) {
@@ -100,20 +105,18 @@ bool UpdateSteps() {
   }
   return CountOn;
 }
-void StairStepCheck(Step ThisStep, byte _Section) {
-  if (StepRead(_Section) < TriggerThreshold) {          
-    ThisStep.State = false;                             //Mark this stap as inactive
+void StairStepCheck(Step *ThisStep, byte _Section) {
+  if (StepRead(_Section) < TriggerThreshold) {
+    ThisStep->State = false;  // Mark this step as inactive
     return;
   }
-  if (ThisStep.State != true) {                         //If this step just got pressed
-    ThisStep.State = true;
+  if (ThisStep->State != true) {  // If this step just got pressed
+    ThisStep->State = true;
     Serial.println("St=" + String(_Section));
-    if (_Section != 0 and _Section < lastStep) {
+    if (_Section != 0 && _Section < lastStep) {
       Direction = DOWN;
-      Serial.println("DOWN");
     } else {
       Direction = UP;
-      Serial.println("UP");
     }
     lastStep = _Section;
   }
@@ -177,9 +180,6 @@ byte StepRead(byte Channel) {
   digitalWrite(PDO_S1, bitRead(Channel, 1));
   digitalWrite(PDO_S2, bitRead(Channel, 2));
   digitalWrite(PDO_S3, bitRead(Channel, 3));
-  digitalWrite(PDO_Enable, HIGH);
   byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
-
-  digitalWrite(PDO_Enable, LOW);
   return ReturnValue;
 }

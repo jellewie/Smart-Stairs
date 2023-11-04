@@ -50,7 +50,6 @@ byte ExtraDirection = 1;
 CRGB LEDs[TotalLEDs];
 #define LED_TYPE WS2812B
 void setup() {
-  Serial.begin(115200);
   pinMode(PDO_S0, OUTPUT);
   pinMode(PDO_S1, OUTPUT);
   pinMode(PDO_S2, OUTPUT);
@@ -59,13 +58,13 @@ void setup() {
   digitalWrite(PDO_Enable, LOW);
   pinMode(PAI_Steps, INPUT);
   FastLED.addLeds<LED_TYPE, PAO_LED, GRB>(LEDs, TotalLEDs);
+  FastLED.setBrightness(1);                                     //Set start brightness to be amost off
   fill_solid(&(LEDs[0]), TotalLEDs, CRGB(1, 1, 1));
   FastLED.show();
   FastLED.delay(1);
   FastLED.clear();
   fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);
   FastLED.show();
-  Serial.println("Booted");
   FastLED.setBrightness(255);
 }
 void loop() {
@@ -113,7 +112,6 @@ void StairStepCheck(Step *ThisStep, byte _Section) {
   }
   if (ThisStep->State != true) {  // If this step just got pressed
     ThisStep->State = true;
-    Serial.println("St=" + String(_Section));
     if (_Section != 0 && _Section < lastStep) {
       Direction = DOWN;
     } else {

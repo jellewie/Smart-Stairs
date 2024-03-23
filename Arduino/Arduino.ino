@@ -35,7 +35,8 @@ Step Stair[] = {Step{25},                                       //The steps and 
                 Step{26},
                 Step{28},
                 Step{26},
-                Step{25}
+                Step{26},
+                Step{0}
                };
 const byte TriggerThreshold = 60;                               //The amount where the step should be considered occupied
 const int LEDTimeOn = 400;                                      //The time in ms that would set the minimum on-time of the step

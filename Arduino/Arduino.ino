@@ -1,4 +1,32 @@
+/*
+  Program written by JelleWho https://github.com/jellewie/Smart-Stairs
+  Board: https://dl.espressif.com/dl/package_esp32_index.json
+*/
+
+#if !defined(ESP32)
+#error "Please check if the 'DOIT ESP32 DEVKIT V1' board is selected, which can be downloaded at https://dl.espressif.com/dl/package_esp32_index.json"
+#endif
+
 #include <FastLED.h>
+#include "WiFiManagerBefore.h"                                  //Define what options to use/include or to hook into WiFiManager
+#include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed
+#define WiFiManager_OTA                                         //Define if you want to use the Over The Air update page (/ota)
+#include <ArduinoHA.h>                                          //https://github.com/dawidchyrzynski/arduino-home-assistant/tree/main
+
+IPAddress HA_BROKER_ADDR = IPAddress(0, 0, 0, 0);
+String HA_BROKER_USERNAME = "";
+String HA_BROKER_PASSWORD = "";
+#define HA_deviceSoftwareVersion "1.0"                          //Device info - Firmware:
+#define HA_deviceManufacturer "JelleWho"                        //Manufacturer
+#define HA_deviceModel "Smart-Stair"                            //Model
+#define HA_lightName "stairenabled"                             //Entity ID
+#define HA_EveryXmsReconnect 60 * 60 * 1000                     //On which interfall to check if WiFi still works
+byte mac[] = {0x00, 0x10, 0xFA, 0x6E, 0x38, 0x4C};
+WiFiClient client;
+HADevice device(mac, sizeof(mac));
+HAMqtt mqtt(client, device);
+HALight light("smartStair");                                    //unique LighID
+bool HA_MQTT_Enabled = false;                                   //If MQTT has runned the setup yet
 #define AverageAmount 8                                         //The amount of analog measurements to take an average from for the step sensor
 #define AnalogScaler pow(2,(12 - 8))                            //Since the ESP has an 10bit analog, but we use an 8bit, set the conversion factor here
 
@@ -58,9 +86,20 @@ const byte PDO_Enable = 32;                                     //^ LOW=Multiple
 enum DIRECTIONS {DOWN, UP};                                     //Just Enum this for an easier code reading
 bool Direction = UP;                                            //The direction the user is walking
 bool UpdateLEDs = true;                                         //If the LEDs needs an update
+bool LEDsEnabled = true;                                        //The current state of the LEDs
 byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
 CRGB LEDs[TotalLEDs];
 #define LED_TYPE WS2812B
+IPAddress String2IpAddress(String ipString) {
+  IPAddress result;
+  if (result.fromString(ipString))
+    return result;
+  return IPAddress(0, 0, 0, 0);
+}
+String IpAddress2String(const IPAddress& ipAddress) {
+  return String(ipAddress[0]) + String(".") + String(ipAddress[1]) + String(".") + String(ipAddress[2]) + String(".") + String(ipAddress[3])  ;
+}
+#include "WiFiManagerLater.h"
 void setup() {
   pinMode(PDO_S0, OUTPUT);
   pinMode(PDO_S1, OUTPUT);
@@ -72,33 +111,48 @@ void setup() {
   FastLED.addLeds<LED_TYPE, PAO_LED, GRB>(LEDs, TotalLEDs);
   fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);
   FastLED.setBrightness(255);
+  WiFiManager.Start();                                          //Run the wifi startup (and save results)
+  WiFiManager.EnableSetup(true);                                //(runtime) Enable the settings, only enabled in APmode by default
+  WiFiManager.OTA_Enabled = true;
+  HaSetup();
 }
 void loop() {
-  static unsigned long LastTime;
-  if (TickEveryXms(&LastTime, 1))
-    StairDepleteCheck();                                        //Deplete the LEDs when needed
-
-  bool UpdateState = UpdateSteps();
-  static bool LastUpdateSteps = !UpdateState;
-  if (UpdateState == false) {                                   //Are we OFF?
-    if (UpdateState != LastUpdateSteps) {                       //Is there an update?
-      fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);           //Turn LEDs off
-      UpdateLEDs = true;                                        //Flag that we need to update the LEDs
+  HaLoop();
+  static bool OLD_LEDsEnabled = LEDsEnabled;
+  if (LEDsEnabled) {
+    static unsigned long LastTime;
+    if (TickEveryXms(&LastTime, 1))
+      StairDepleteCheck();                                      //Deplete the LEDs when needed
+    bool UpdateState = UpdateSteps();
+    static bool LastUpdateSteps = !UpdateState;
+    if (UpdateState == false) {                                 //Are we OFF?
+      if (UpdateState != LastUpdateSteps) {                     //Is there an update?
+        fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);         //Turn LEDs off
+        UpdateLEDs = true;                                      //Flag that we need to update the LEDs
+      }
+    } else {
+      if (UpdateState != LastUpdateSteps) {                     //Is there an update?
+        fill_solid(&(LEDs[0]), TotalLEDs, LEDColorIdle);        //Base color all LEDs as idle
+        UpdateLEDs = true;                                      //Flag that we need to update the LEDs
+      }
+      for (byte i = 0; i < LEDSections; i++) {                  //For each step
+        StairStepCheck(&Stair[i], i);
+      }
     }
+    LastUpdateSteps = UpdateState;                              //Remenber what this step state was for next time
   } else {
-    if (UpdateState != LastUpdateSteps) {                       //Is there an update?
-      fill_solid(&(LEDs[0]), TotalLEDs, LEDColorIdle);          //Base color all LEDs as idle
-      UpdateLEDs = true;                                        //Flag that we need to update the LEDs
-    }
-    for (byte i = 0; i < LEDSections; i++) {                    //For each step
-      StairStepCheck(&Stair[i], i);
+    if (LEDsEnabled != OLD_LEDsEnabled) {                       //If we just are just DISABLED
+      for (byte i = 0; i < LEDSections; i++)                    //For each step
+        Stair[i].StayOnFor = 0;                                 //Deplete it completly
+      FastLED.clear();
+      UpdateLEDs = true;
     }
   }
+  OLD_LEDsEnabled = LEDsEnabled;
   if (UpdateLEDs) {                                             //If the LEDs need an update
     FastLED.show();                                             //Update LEDs
     UpdateLEDs = false;                                         //Flag update as complete
   }
-  LastUpdateSteps = UpdateState;                                //Remenber what this step state was for next time
 }
 bool UpdateSteps() {                                            //Do we need an LED update?
   for (byte i = 0; i < LEDSections; i++) {
@@ -114,7 +168,8 @@ void StairStepCheck(Step *ThisStep, byte _Section) {
   }
   if (ThisStep->State != true) {                                //If this step just got pressed
     ThisStep->State = true;
-    if (_Section != 0 && _Section < lastStep) {
+    if ((_Section != 0 && _Section < lastStep) or (_Section == LEDSections - 1)) {   //
+      //if (_Section != 0 && _Section <= lastStep) {  //
       Direction = DOWN;
     } else {
       Direction = UP;
@@ -164,7 +219,7 @@ int StartPos(byte Section) {                                    //Returns the po
       return Counter;
     Counter += Stair[i].SectionLength;
   }
-  return 0;                                                    //Section error, just return 0
+  return 0;                                                     //Section error, just return 0
 }
 bool TickEveryXms(unsigned long * _LastTime, unsigned long _Delay) {
   static unsigned long _Middle = -1;
@@ -182,4 +237,32 @@ byte StepRead(byte Channel) {                                   //Return if a st
   digitalWrite(PDO_S3, bitRead(Channel, 3));
   byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
   return ReturnValue;
+}
+
+void HaSetup() {
+  if (HA_BROKER_ADDR == IPAddress(0, 0, 0, 0)) return;          //Stop HA MQTT when no IP has been setup
+  device.setName(Name);
+  device.setSoftwareVersion(HA_deviceSoftwareVersion);
+  device.setManufacturer(HA_deviceManufacturer);
+  device.setModel(HA_deviceModel);
+  //device.setConfigurationUrl(IpAddress2String(WiFi.localIP()).c_str());
+  light.setName(HA_lightName);
+  light.onStateCommand(onStateCommand);
+  mqtt.begin(HA_BROKER_ADDR, HA_BROKER_USERNAME.c_str(), HA_BROKER_PASSWORD.c_str());
+  HA_MQTT_Enabled = true;                                       //Set this before HaLoop to avoid looping
+  HaLoop();
+}
+void HaLoop() {
+  static unsigned long LastTime;
+  if (TickEveryXms(&LastTime, HA_EveryXmsReconnect)) {
+    WiFiManager.CheckAndReconnectIfNeeded(false);               //Try to connect to WiFi, but dont start ApMode
+  }
+  WiFiManager.RunServer();
+  if (HA_BROKER_ADDR == IPAddress(0, 0, 0, 0)) return;          //Stop HA MQTT when no IP has been setup
+  if (!HA_MQTT_Enabled) HaSetup();                              //Run setup if we haven't yet
+  mqtt.loop();
+}
+void onStateCommand(bool state, HALight* sender) {
+  LEDsEnabled = state;
+  sender->setState(state);                                      //Report state back to the Home Assistant
 }

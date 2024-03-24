@@ -16,7 +16,7 @@
 IPAddress HA_BROKER_ADDR = IPAddress(0, 0, 0, 0);
 String HA_BROKER_USERNAME = "";
 String HA_BROKER_PASSWORD = "";
-#define HA_deviceSoftwareVersion "1.0"                          //Device info - Firmware:
+#define HA_deviceSoftwareVersion "1.1"                          //Device info - Firmware:
 #define HA_deviceManufacturer "JelleWho"                        //Manufacturer
 #define HA_deviceModel "Smart-Stair"                            //Model
 #define HA_lightName "stairenabled"                             //Entity ID

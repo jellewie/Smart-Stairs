@@ -12,6 +12,8 @@
 #include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed
 #define WiFiManager_OTA                                         //Define if you want to use the Over The Air update page (/ota)
 #include <ArduinoHA.h>                                          //https://github.com/dawidchyrzynski/arduino-home-assistant/
+#define AverageAmount 8                                         //The amount of analog measurements to take an average from for the step sensor
+#include "Functions.h"
 
 IPAddress HA_BROKER_ADDR = IPAddress(0, 0, 0, 0);
 String HA_BROKER_USERNAME = "";
@@ -21,36 +23,17 @@ String HA_BROKER_PASSWORD = "";
 #define HA_deviceModel "Smart-Stair"                            //Model
 #define HA_lightName "stairenabled"                             //Entity ID
 #define HA_EveryXmsReconnect 60 * 60 * 1000                     //On which interfall to check if WiFi still works
+#define HA_EveryXmsUpdate 60 * 1000                             //How often to send the LDR sensor value to HA
 byte mac[] = {0x00, 0x10, 0xFA, 0x6E, 0x38, 0x4C};
 WiFiClient client;
 HADevice device(mac, sizeof(mac));
 HAMqtt mqtt(client, device);
-HALight light("smartStair");                                    //unique LighID
+HALight light("smartStair");                                    //unique LighID used for the whole LED strip
+HASensorNumber numbersensor("ldr");                             //unique SensorNumberID used to send the LDR data to HA
+HANumber number("LDRmax");                                      //unique NumberID used to set a trigger setpoint from HA
 bool HA_MQTT_Enabled = false;                                   //If MQTT has runned the setup yet
-#define AverageAmount 8                                         //The amount of analog measurements to take an average from for the step sensor
 #define AnalogScaler pow(2,(12 - 8))                            //Since the ESP has an 10bit analog, but we use an 8bit, set the conversion factor here
 
-struct AVG {
-  byte Counter;                                                 //Where we are in the array
-  long PointTotal;                                              //The sum of all values in the array
-  byte Point[AverageAmount];                                    //The array of all values
-};
-struct Step {
-  byte SectionLength;                                           //Amount of LEDs in this secion
-  bool State;                                                   //The current state, HIGH/LOW this is used for initializing
-  int StayOnFor;                                                //The time the step should still be light up
-  AVG Average;                                                  //The average analog value of the step
-};
-byte ReadAverage(byte Input, AVG *av) {                         //Returns the average of the last AverageAmount measurements.
-  av->PointTotal -= av->Point[av->Counter];                     //Remove the old value from the total value
-  av->Point[av->Counter] = Input;                               //Add the new number into the array
-  av->PointTotal += av->Point[av->Counter];                     //Add the new value to the total value
-  av->Counter++;                                                //Increase the counter
-  if (av->Counter >= AverageAmount)                             //If the counter is at its configured end
-    av->Counter = 0;                                            //Go back down
-  byte ReturnValue = av->PointTotal / AverageAmount;            //Calculate the average
-  return ReturnValue;
-}
 Step Stair[] = {Step{25},                                       //The steps and their LED section length
                 Step{27},
                 Step{27},
@@ -83,22 +66,16 @@ const byte PDO_S2 = 33;                                         //^
 const byte PDO_S3 = 25;                                         //^
 const byte PAI_Steps = 35;                                      //^
 const byte PDO_Enable = 32;                                     //^ LOW=Multiplexer EBABLED
+const byte PAI_LDR = 36;
 enum DIRECTIONS {DOWN, UP};                                     //Just Enum this for an easier code reading
 bool Direction = UP;                                            //The direction the user is walking
 bool UpdateLEDs = true;                                         //If the LEDs needs an update
 bool LEDsEnabled = true;                                        //The current state of the LEDs
+bool ToBright = false;
 byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
+byte LDRmax = 100;                                              //Above this light/lux ignore the steps
 CRGB LEDs[TotalLEDs];
 #define LED_TYPE WS2812B
-IPAddress String2IpAddress(String ipString) {
-  IPAddress result;
-  if (result.fromString(ipString))
-    return result;
-  return IPAddress(0, 0, 0, 0);
-}
-String IpAddress2String(const IPAddress& ipAddress) {
-  return String(ipAddress[0]) + String(".") + String(ipAddress[1]) + String(".") + String(ipAddress[2]) + String(".") + String(ipAddress[3])  ;
-}
 #include "WiFiManagerLater.h"
 void setup() {
   pinMode(PDO_S0, OUTPUT);
@@ -121,27 +98,32 @@ void setup() {
 void loop() {
   HaLoop();
   static bool OLD_LEDsEnabled = LEDsEnabled;
+  ReadLDR();                                                    //Keep the value updated
+  if (StairIsOn() == false)                                     //If the stair is off
+    ToBright = (ReadLDR() > LDRmax) ? true : false;             //Update the ToBright state, this prevents the state from changing due to its own light
   if (LEDsEnabled) {
-    static unsigned long LastTime;
-    if (TickEveryXms(&LastTime, 1))
-      StairDepleteCheck();                                      //Deplete the LEDs when needed
-    bool UpdateState = UpdateSteps();
-    static bool LastUpdateSteps = !UpdateState;
-    if (UpdateState == false) {                                 //Are we OFF?
-      if (UpdateState != LastUpdateSteps) {                     //Is there an update?
-        fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);         //Turn LEDs off
-        UpdateLEDs = true;                                      //Flag that we need to update the LEDs
+    if (ToBright == false) {
+      static unsigned long LastTime;
+      if (TickEveryXms(&LastTime, 1))
+        StairDepleteCheck();                                    //Deplete the LEDs when needed
+      bool UpdateState = UpdateSteps();
+      static bool LastUpdateSteps = !UpdateState;
+      if (UpdateState == false) {                               //Are we OFF?
+        if (UpdateState != LastUpdateSteps) {                   //Is there an update?
+          fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);       //Turn LEDs off
+          UpdateLEDs = true;                                    //Flag that we need to update the LEDs
+        }
+      } else {
+        if (UpdateState != LastUpdateSteps) {                   //Is there an update?
+          fill_solid(&(LEDs[0]), TotalLEDs, LEDColorIdle);      //Base color all LEDs as idle
+          UpdateLEDs = true;                                    //Flag that we need to update the LEDs
+        }
+        for (byte i = 0; i < LEDSections; i++) {                //For each step
+          StairStepCheck(&Stair[i], i);
+        }
       }
-    } else {
-      if (UpdateState != LastUpdateSteps) {                     //Is there an update?
-        fill_solid(&(LEDs[0]), TotalLEDs, LEDColorIdle);        //Base color all LEDs as idle
-        UpdateLEDs = true;                                      //Flag that we need to update the LEDs
-      }
-      for (byte i = 0; i < LEDSections; i++) {                  //For each step
-        StairStepCheck(&Stair[i], i);
-      }
+      LastUpdateSteps = UpdateState;                            //Remember what this step state was for next time
     }
-    LastUpdateSteps = UpdateState;                              //Remenber what this step state was for next time
   } else {
     if (LEDsEnabled != OLD_LEDsEnabled) {                       //If we just are just DISABLED
       for (byte i = 0; i < LEDSections; i++)                    //For each step
@@ -170,8 +152,7 @@ void StairStepCheck(Step *ThisStep, byte _Section) {
   }
   if (ThisStep->State != true) {                                //If this step just got pressed
     ThisStep->State = true;
-    if ((_Section != 0 && _Section < lastStep) or (_Section == LEDSections - 1)) {   //
-      //if (_Section != 0 && _Section <= lastStep) {  //
+    if ((_Section != 0 && _Section < lastStep) or (_Section == LEDSections - 1)) {
       Direction = DOWN;
     } else {
       Direction = UP;
@@ -214,6 +195,14 @@ void StairDepleteCheck() {                                      //Deplete STAY-O
     }
   }
 }
+bool StairIsOn() {                                              //Check if the stair is currently on
+  for (byte i = 0; i < LEDSections; i++) {                      //For each step
+    if (Stair[i].StayOnFor > 0) {                               //If it is on
+      return true;
+    }
+  }
+  return false;
+}
 int StartPos(byte Section) {                                    //Returns the position of the first LED of the section
   int Counter = 0;
   for (byte i = 0; i < LEDSections; i++) {
@@ -223,15 +212,6 @@ int StartPos(byte Section) {                                    //Returns the po
   }
   return 0;                                                     //Section error, just return 0
 }
-bool TickEveryXms(unsigned long * _LastTime, unsigned long _Delay) {
-  static unsigned long _Middle = -1;
-  if (_Middle == -1) _Middle = _Middle / 2;
-  if (millis() - (*_LastTime + _Delay + 1) < _Middle) {
-    *_LastTime = millis();
-    return true;
-  }
-  return false;
-}
 byte StepRead(byte Channel) {                                   //Return if a step is occupied, we are using a CD74HC4067 here to extend IO
   digitalWrite(PDO_S0, bitRead(Channel, 0));
   digitalWrite(PDO_S1, bitRead(Channel, 1));
@@ -240,62 +220,7 @@ byte StepRead(byte Channel) {                                   //Return if a st
   byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
   return ReturnValue;
 }
-
-void HaSetup() {
-  if (HA_BROKER_ADDR == IPAddress(0, 0, 0, 0)) return;          //Stop HA MQTT when no IP has been setup
-  device.setName(Name);
-  device.setSoftwareVersion(HA_deviceSoftwareVersion);
-  device.setManufacturer(HA_deviceManufacturer);
-  device.setModel(HA_deviceModel);
-  //device.setConfigurationUrl(IpAddress2String(WiFi.localIP()).c_str());
-  light.setName(HA_lightName);
-  light.onStateCommand(onStateCommand);
-  mqtt.begin(HA_BROKER_ADDR, HA_BROKER_USERNAME.c_str(), HA_BROKER_PASSWORD.c_str());
-  HA_MQTT_Enabled = true;                                       //Set this before HaLoop to avoid looping
-  HaLoop();
-}
-void HaLoop() {
-  static unsigned long LastTime;
-  if (TickEveryXms(&LastTime, HA_EveryXmsReconnect)) {
-    WiFiManager.CheckAndReconnectIfNeeded(false);               //Try to connect to WiFi, but dont start ApMode
-  }
-  WiFiManager.RunServer();
-  if (HA_BROKER_ADDR == IPAddress(0, 0, 0, 0)) return;          //Stop HA MQTT when no IP has been setup
-  if (!HA_MQTT_Enabled) HaSetup();                              //Run setup if we haven't yet
-  mqtt.loop();
-}
-void onStateCommand(bool state, HALight* sender) {
-  LEDsEnabled = state;
-  sender->setState(state);                                      //Report state back to the Home Assistant
-}
-void handle_Info() {
-  String Message = "https://github.com/jellewie \n"
-                   "Code compiled on " + String(__DATE__) + " " + String(__TIME__) + "\n"
-                   "MAC adress = " + String(WiFi.macAddress()) + "\n"
-                   "IP adress = " + IpAddress2String(WiFi.localIP()) + "\n"
-                   "AverageAmount = " + String(AverageAmount) + "\n"
-                   "HA_EveryXmsReconnect = " + String(HA_EveryXmsReconnect) + "\n"
-                   "LEDSections/steps = " + String(LEDSections) + "\n"
-
-                   "\nSOFT_SETTINGS\n";
-  for (byte i = 0; i < WiFiManager_Settings - 2; i++)
-    Message += WiFiManager_VariableNames[i + 2] + " = " + WiFiManagerUser_Get_Value(i, false, true) + "\n";
-
-  Message += "\nSOFT_SETTINGS raw\n";
-  for (byte i = 0; i < WiFiManager_Settings - 2; i++)
-    Message += WiFiManager_VariableNames[i + 2] + " = " + WiFiManagerUser_Get_Value(i, false, false) + "\n";
-
-  server.send(200, "text/plain", Message);
-}
-void handle_NotFound() {
-  String Message = "ERROR URL NOT FOUND: '";
-  Message += (server.method() == HTTP_GET) ? "GET" : "POST";
-  Message += server.uri();
-  if (server.args() > 0) Message += " ? ";
-  for (byte i = 0; i < server.args(); i++) {
-    if (i != 0)
-      Message += "&";
-    Message += server.argName(i) + " = " + server.arg(i);
-  }
-  server.send(404, "text / plain", Message);
+byte ReadLDR() {
+  static AVG LDR_Average = {};
+  return 255 - ReadAverage(analogRead(PAI_LDR) / AnalogScaler, &LDR_Average); //Inverse so dark=0 and bright=255
 }

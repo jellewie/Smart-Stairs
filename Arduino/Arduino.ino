@@ -11,7 +11,7 @@
 #include "WiFiManagerBefore.h"                                  //Define what options to use/include or to hook into WiFiManager
 #include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed
 #define WiFiManager_OTA                                         //Define if you want to use the Over The Air update page (/ota)
-#include <ArduinoHA.h>                                          //https://github.com/dawidchyrzynski/arduino-home-assistant/tree/main
+#include <ArduinoHA.h>                                          //https://github.com/dawidchyrzynski/arduino-home-assistant/
 
 IPAddress HA_BROKER_ADDR = IPAddress(0, 0, 0, 0);
 String HA_BROKER_USERNAME = "";
@@ -111,6 +111,8 @@ void setup() {
   FastLED.addLeds<LED_TYPE, PAO_LED, GRB>(LEDs, TotalLEDs);
   fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);
   FastLED.setBrightness(255);
+  server.on("/info",        handle_Info);
+  server.onNotFound(        handle_NotFound);                   //When a client requests an unknown URI
   WiFiManager.Start();                                          //Run the wifi startup (and save results)
   WiFiManager.EnableSetup(true);                                //(runtime) Enable the settings, only enabled in APmode by default
   WiFiManager.OTA_Enabled = true;
@@ -265,4 +267,35 @@ void HaLoop() {
 void onStateCommand(bool state, HALight* sender) {
   LEDsEnabled = state;
   sender->setState(state);                                      //Report state back to the Home Assistant
+}
+void handle_Info() {
+  String Message = "https://github.com/jellewie \n"
+                   "Code compiled on " + String(__DATE__) + " " + String(__TIME__) + "\n"
+                   "MAC adress = " + String(WiFi.macAddress()) + "\n"
+                   "IP adress = " + IpAddress2String(WiFi.localIP()) + "\n"
+                   "AverageAmount = " + String(AverageAmount) + "\n"
+                   "HA_EveryXmsReconnect = " + String(HA_EveryXmsReconnect) + "\n"
+                   "LEDSections/steps = " + String(LEDSections) + "\n"
+
+                   "\nSOFT_SETTINGS\n";
+  for (byte i = 0; i < WiFiManager_Settings - 2; i++)
+    Message += WiFiManager_VariableNames[i + 2] + " = " + WiFiManagerUser_Get_Value(i, false, true) + "\n";
+
+  Message += "\nSOFT_SETTINGS raw\n";
+  for (byte i = 0; i < WiFiManager_Settings - 2; i++)
+    Message += WiFiManager_VariableNames[i + 2] + " = " + WiFiManagerUser_Get_Value(i, false, false) + "\n";
+
+  server.send(200, "text/plain", Message);
+}
+void handle_NotFound() {
+  String Message = "ERROR URL NOT FOUND: '";
+  Message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  Message += server.uri();
+  if (server.args() > 0) Message += " ? ";
+  for (byte i = 0; i < server.args(); i++) {
+    if (i != 0)
+      Message += "&";
+    Message += server.argName(i) + " = " + server.arg(i);
+  }
+  server.send(404, "text / plain", Message);
 }

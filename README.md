@@ -1,7 +1,7 @@
 # Arduino-smart-stairs
 A nice way to add some reactive lighting to your stairs. controlled by an ESP32 and a custom PCB, and powered by a 5V power supply.
 <img align="right" src="Images/Home Assistant dashboard.png" alt="Home Assistant dashboard example" width=30%>
-This also can be intergraded to Home [Assistant with](https://www.home-assistant.io/) [MQTT](https://www.home-assistant.io/integrations/mqtt)
+This also can be intergraded to [Home Assistant](https://www.home-assistant.io/) with [MQTT](https://www.home-assistant.io/integrations/mqtt)
 
 You will need 0.3W watt per 100% bright white (RBG=255,255,255) LED. My stair for example needs maximum 13steps x 30LED x 0.3W = 114W, but I use a verry low brightness and not all steps are on at the same time. So a lower 100W power supply is used. If you unserspec the power supply the lights will change colour to yellow-ish and weird things can happen.
 

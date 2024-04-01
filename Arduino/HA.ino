@@ -19,6 +19,7 @@ void HaSetup() {
   mqtt.begin(HA_BROKER_ADDR, HA_BROKER_USERNAME.c_str(), HA_BROKER_PASSWORD.c_str());
   HA_MQTT_Enabled = true;                                       //Set this before HaLoop to avoid looping
   HaLoop();
+  light.setState(true);
 }
 void HaLoop() {
   static unsigned long LastTime;

@@ -40,7 +40,16 @@ String WiFiManagerUser_Get_Value(byte ValueID, bool Safe, bool Convert) {
       break;
     case 1:  return IpAddress2String(HA_BROKER_ADDR);         break;
     case 2:  return HA_BROKER_USERNAME;                       break;
-    case 3:  return HA_BROKER_PASSWORD;                       break;
+    case 3: {
+        if (Safe)                                                 //If's it's safe to return password.
+          Return_Value += String(HA_BROKER_PASSWORD);
+        else {
+          for (byte i = 0; i < String(HA_BROKER_PASSWORD).length(); i++)
+            Return_Value += "*";
+        }
+        return Return_Value;
+      }
+      break;
     case 4:  return String(LDRmax);                           break;
   }
   return "";

@@ -1,7 +1,7 @@
 struct AVG {
   byte Counter;                                                 //Where we are in the array
-  long PointTotal;                                              //The sum of all values in the array
-  byte Point[AverageAmount];                                    //The array of all values
+  unsigned long PointTotal;                                     //The sum of all values in the array
+  int Point[AverageAmount];                                     //The array of all values
 };
 struct Step {
   byte SectionLength;                                           //Amount of LEDs in this secion
@@ -9,14 +9,14 @@ struct Step {
   int StayOnFor;                                                //The time the step should still be light up
   AVG Average;                                                  //The average analog value of the step
 };
-byte ReadAverage(byte Input, AVG *av) {                         //Returns the average of the last AverageAmount measurements.
+int ReadAverage(int Input, AVG *av) {                           //Returns the average of the last AverageAmount measurements.
   av->PointTotal -= av->Point[av->Counter];                     //Remove the old value from the total value
   av->Point[av->Counter] = Input;                               //Add the new number into the array
   av->PointTotal += av->Point[av->Counter];                     //Add the new value to the total value
   av->Counter++;                                                //Increase the counter
   if (av->Counter >= AverageAmount)                             //If the counter is at its configured end
     av->Counter = 0;                                            //Go back down
-  byte ReturnValue = av->PointTotal / AverageAmount;            //Calculate the average
+  int ReturnValue = av->PointTotal / AverageAmount;             //Calculate the average
   return ReturnValue;
 }
 IPAddress String2IpAddress(String ipString) {

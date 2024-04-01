@@ -3,8 +3,8 @@ void handle_Info() {
                    "Code compiled on " + String(__DATE__) + " " + String(__TIME__) + "\n"
                    "MAC adress = " + String(WiFi.macAddress()) + "\n"
                    "IP adress = " + IpAddress2String(WiFi.localIP()) + "\n"
-                   "PAI_LDR raw= " + String(analogRead(PAI_LDR)) + "(not inversed/scaled!)\n"
-                   "ReadLDR = " + String(ReadLDR()) + " dark=0 and bright=255\n"
+                   "PAI_LDR raw= " + String(analogRead(PAI_LDR)) + " (not inversed/scaled!)\n"
+                   "ReadLDR = " + String(ReadLDR()) + " dark=0 and bright=4096\n"
                    "LDRmax = " + String(LDRmax) + "\n"
                    "TooBright = " + (digitalRead(TooBright) ? "FALSE" : "TRUE")  + "\n"
                    "AverageAmount = " + String(AverageAmount) + "\n"
@@ -12,15 +12,15 @@ void handle_Info() {
                    "HA_EveryXmsUpdate = " + String(HA_EveryXmsUpdate) + "ms = " + String(HA_EveryXmsUpdate / 60000) + "m\n"
                    "LEDSections/steps = " + String(LEDSections) + "\n"
                    "Direction = " + String(Direction) + "\n"
-                   "lastStep = " + String(lastStep) + "\n"
+                   "lastStep = " + String(lastStep) + "\n";
 
-                   "\nSOFT_SETTINGS\n";
+  Message += "\nSteps raw\n";
+  for (byte i = 0; i < LEDSections; i++)
+    Message += "Step " + String(i) + " L=" +String(Stair[i].SectionLength) + " now="+ String(StepRead(i)) + " StayOnFor=" + String(Stair[i].StayOnFor) + "\n";
+
+  Message += "\nSOFT_SETTINGS\n";
   for (byte i = 0; i < WiFiManager_Settings - 2; i++)
     Message += WiFiManager_VariableNames[i + 2] + " = " + WiFiManagerUser_Get_Value(i, false, true) + "\n";
-
-  Message += "\nSOFT_SETTINGS raw\n";
-  for (byte i = 0; i < WiFiManager_Settings - 2; i++)
-    Message += WiFiManager_VariableNames[i + 2] + " = " + WiFiManagerUser_Get_Value(i, false, false) + "\n";
 
   server.send(200, "text/plain", Message);
 }

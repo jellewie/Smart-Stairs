@@ -26,7 +26,9 @@ bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
         HA_BROKER_PASSWORD       = Value;                     return true;
       } break;
     case 4: {
-        LDRmax                   = IsTrue(Value);             return true;
+        int Val = Value.toInt();
+        if (Val < 0 or Val > 4096)                            return false;
+        LDRmax = Val;                                         return true;
       } break;
   }
   return false;                                                 //Report back that the ValueID is unknown, and we could not set it

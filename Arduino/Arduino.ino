@@ -73,7 +73,7 @@ bool UpdateLEDs = true;                                         //If the LEDs ne
 bool LEDsEnabled = true;                                        //The current state of the LEDs
 bool TooBright = false;
 byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
-byte LDRmax = 100;                                              //Above this light/lux ignore the steps
+int LDRmax = 4096;                                              //Above this light/lux ignore the steps
 CRGB LEDs[TotalLEDs];
 #define LED_TYPE WS2812B
 #include "WiFiManagerLater.h"
@@ -220,7 +220,7 @@ byte StepRead(byte Channel) {                                   //Return if a st
   byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
   return ReturnValue;
 }
-byte ReadLDR() {
+int ReadLDR() {
   static AVG LDR_Average = {};
-  return 255 - ReadAverage(analogRead(PAI_LDR) / AnalogScaler, &LDR_Average); //Inverse so dark=0 and bright=255
+  return 4096 - ReadAverage(analogRead(PAI_LDR), &LDR_Average); //Inverse so dark=0 and bright=4096
 }

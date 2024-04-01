@@ -41,7 +41,7 @@ String WiFiManagerUser_Get_Value(byte ValueID, bool Safe, bool Convert) {
     case 1:  return IpAddress2String(HA_BROKER_ADDR);         break;
     case 2:  return HA_BROKER_USERNAME;                       break;
     case 3:  return HA_BROKER_PASSWORD;                       break;
-    case 4:  return IsTrueToString(LDRmax);                   break;
+    case 4:  return String(LDRmax);                           break;
   }
   return "";
 }

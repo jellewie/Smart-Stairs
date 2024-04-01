@@ -71,7 +71,7 @@ enum DIRECTIONS {DOWN, UP};                                     //Just Enum this
 bool Direction = UP;                                            //The direction the user is walking
 bool UpdateLEDs = true;                                         //If the LEDs needs an update
 bool LEDsEnabled = true;                                        //The current state of the LEDs
-bool ToBright = false;
+bool TooBright = false;
 byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
 byte LDRmax = 100;                                              //Above this light/lux ignore the steps
 CRGB LEDs[TotalLEDs];
@@ -100,9 +100,9 @@ void loop() {
   static bool OLD_LEDsEnabled = LEDsEnabled;
   ReadLDR();                                                    //Keep the value updated
   if (StairIsOn() == false)                                     //If the stair is off
-    ToBright = (ReadLDR() > LDRmax) ? true : false;             //Update the ToBright state, this prevents the state from changing due to its own light
+    TooBright = (ReadLDR() > LDRmax) ? true : false;             //Update the TooBright state, this prevents the state from changing due to its own light
   if (LEDsEnabled) {
-    if (ToBright == false) {
+    if (TooBright == false) {
       static unsigned long LastTime;
       if (TickEveryXms(&LastTime, 1))
         StairDepleteCheck();                                    //Deplete the LEDs when needed

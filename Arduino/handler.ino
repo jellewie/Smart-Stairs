@@ -6,7 +6,7 @@ void handle_Info() {
                    "PAI_LDR raw= " + String(analogRead(PAI_LDR)) + "(not inversed/scaled!)\n"
                    "ReadLDR = " + String(ReadLDR()) + " dark=0 and bright=255\n"
                    "LDRmax = " + String(LDRmax) + "\n"
-                   "ToBright = " + (digitalRead(ToBright) ? "FALSE" : "TRUE")  + "\n"
+                   "TooBright = " + (digitalRead(TooBright) ? "FALSE" : "TRUE")  + "\n"
                    "AverageAmount = " + String(AverageAmount) + "\n"
                    "HA_EveryXmsReconnect = " + String(HA_EveryXmsReconnect) + "ms = " + String(HA_EveryXmsReconnect / 60000) +  "m\n"
                    "HA_EveryXmsUpdate = " + String(HA_EveryXmsUpdate) + "ms = " + String(HA_EveryXmsUpdate / 60000) + "m\n"

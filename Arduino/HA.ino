@@ -13,7 +13,7 @@ void HaSetup() {
   number.onCommand(onNumberCommand);
   number.setName("LDRmax");
   number.setMin(0);                                             //Can be float if precision is set via the constructor
-  number.setMax(4096);                                          //Can be float if precision is set via the constructor
+  number.setMax(255);                                          //Can be float if precision is set via the constructor
   number.setStep(1);                                            //Minimum step: 0.001f
   number.setRetain(true);
   mqtt.begin(HA_BROKER_ADDR, HA_BROKER_USERNAME.c_str(), HA_BROKER_PASSWORD.c_str());

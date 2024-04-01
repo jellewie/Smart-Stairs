@@ -41,5 +41,3 @@ Note that the character " and TAB (EEPROM_Seperator) cannot be used, these will 
 * PCB & schematic
 [This is included in this repository](Schematic-PCB)
 Beta/ updated version on [EasyEDA](https://oshwlab.com/jellewietsma/smart-stairs)
-* 3D models
-[These are included in this repository](3DModel)

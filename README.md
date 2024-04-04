@@ -35,6 +35,17 @@ Note that the character " and TAB (EEPROM_Seperator) cannot be used, these will 
 - [an PCB and all it parts](https://oshwlab.com/jellewietsma/smart-stairs)
 - [Pressure sensor for each step, like the SEN0299](https://eu.mouser.com/ProductDetail/DFRobot/SEN0299?qs=Zz7%252BYVVL6bEMMkhXlCdCeg%3D%3D)
 
+# Power consumption
+If I only connect the 5V power supply it consumes about 2.1W,
+If I connect the ESP32 to it it consumes 2.1W
+If I also connect the LED's it uses 3.1W
+These measurements are made with an athom smart-plug-v2 with an cse7766, so takes these numbers with a big grain of salt.
+
+Total Stair power comsumption idle 3.1W
+
+Esp (+PSU + sensors) 2.1W
+
+PSU only 1.6W
 # Appendix
 * Firmware
 [This is included in this repository](Arduino)

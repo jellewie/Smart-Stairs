@@ -4,7 +4,8 @@ void HaSetup() {
   device.setSoftwareVersion(HA_deviceSoftwareVersion);
   device.setManufacturer(HA_deviceManufacturer);
   device.setModel(HA_deviceModel);
-  //device.setConfigurationUrl(IpAddress2String(WiFi.localIP()).c_str());
+  String URL = "http://" + IpAddress2String(WiFi.localIP());
+  device.setConfigurationUrl(URL.c_str());
   light.setName(HA_lightName);
   light.onStateCommand(onStateCommand);
   numbersensor.setName("Light");
@@ -12,9 +13,9 @@ void HaSetup() {
   numbersensor.setIcon("mdi:brightness-5");
   number.onCommand(onNumberCommand);
   number.setName("LDRmax");
-  number.setMin(0);                                             //Can be float if precision is set via the constructor
-  number.setMax(255);                                          //Can be float if precision is set via the constructor
-  number.setStep(1);                                            //Minimum step: 0.001f
+  number.setMin(0);
+  number.setMax(255);
+  number.setStep(1);
   number.setRetain(true);
   mqtt.begin(HA_BROKER_ADDR, HA_BROKER_USERNAME.c_str(), HA_BROKER_PASSWORD.c_str());
   HA_MQTT_Enabled = true;                                       //Set this before HaLoop to avoid looping
@@ -24,7 +25,9 @@ void HaSetup() {
 void HaLoop() {
   static unsigned long LastTime;
   if (TickEveryXms(&LastTime, HA_EveryXmsReconnect)) {
-    WiFiManager.CheckAndReconnectIfNeeded(false);               //Try to connect to WiFi, but dont start ApMode
+    if (WiFiManager.CheckAndReconnectIfNeeded(false)) {         //Try to connect to WiFi, but dont start ApMode
+      light.setState(LEDsEnabled, true);                        //(state, force)
+    }
   }
   static unsigned long LastTime2;
   if (TickEveryXms(&LastTime2, HA_EveryXmsUpdate)) {

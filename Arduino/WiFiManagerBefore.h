@@ -38,7 +38,7 @@
 
 #define WiFiManagerUser_VariableNames_Defined                   //Define that we want to use the custom user variables (Dont forget to setup WiFiManager_VariableNames and WiFiManager_Settings)
 const String WiFiManager_VariableNames[] = {"SSID", "Password",
-                                            "name", "HABrokerIP", "HABrokerUser", "HABrokerPass", "LDRmax"
+                                            "name", "HABrokerIP", "HABrokerUser", "HABrokerPass", "LDRmax", "HA_EveryXmsReconnect"
                                            };
 const int EEPROM_size = 255;                                  	//Max Amount of chars for 'SSID(16) + PASSWORD(16) + extra custom vars(?) +1(NULL)' defaults to 33
 

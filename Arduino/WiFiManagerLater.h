@@ -30,6 +30,11 @@ bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
         if (Val < 0 or Val > 4096)                            return false;
         LDRmax = Val;                                         return true;
       } break;
+    case 5: {
+        int Val = Value.toInt();
+        if (Val < 0 or Val > 86400000)                        return false;
+        HA_EveryXmsReconnect = Val;                           return true;
+      } break;
   }
   return false;                                                 //Report back that the ValueID is unknown, and we could not set it
 }
@@ -54,6 +59,7 @@ String WiFiManagerUser_Get_Value(byte ValueID, bool Safe, bool Convert) {
       }
       break;
     case 4:  return String(LDRmax);                           break;
+    case 5:  return String(HA_EveryXmsReconnect);             break;
   }
   return "";
 }

@@ -12,11 +12,13 @@ void handle_Info() {
                    "HA_EveryXmsUpdate = " + String(HA_EveryXmsUpdate) + "ms = " + String(HA_EveryXmsUpdate / 60000) + "m\n"
                    "LEDSections/steps = " + String(LEDSections) + "\n"
                    "Direction = " + String(Direction) + "\n"
-                   "lastStep = " + String(lastStep) + "\n";
+                   "lastStep = " + String(lastStep) + "\n"
+                   "LEDsEnabled=" + (LEDsEnabled ? "FALSE" : "TRUE") + "\n"
+                   "light.setState(LEDsEnabled, true)=" + (light.setState(LEDsEnabled, true) ? "FALSE" : "TRUE") + "\n";
 
   Message += "\nSteps raw\n";
   for (byte i = 0; i < LEDSections; i++)
-    Message += "Step " + String(i) + " L=" +String(Stair[i].SectionLength) + " now="+ String(StepRead(i)) + " StayOnFor=" + String(Stair[i].StayOnFor) + "\n";
+    Message += "Step " + String(i) + " L=" + String(Stair[i].SectionLength) + " now=" + String(StepRead(i)) + " StayOnFor=" + String(Stair[i].StayOnFor) + "\n";
 
   Message += "\nSOFT_SETTINGS\n";
   for (byte i = 0; i < WiFiManager_Settings - 2; i++)

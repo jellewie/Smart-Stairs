@@ -26,6 +26,7 @@ void HaLoop() {
   static unsigned long LastTime;
   if (TickEveryXms(&LastTime, HA_EveryXmsReconnect)) {
     if (WiFiManager.CheckAndReconnectIfNeeded(false)) {         //Try to connect to WiFi, but dont start ApMode
+      HaSetup();
       light.setState(LEDsEnabled, true);                        //(state, force)
     }
   }

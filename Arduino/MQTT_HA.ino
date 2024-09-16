@@ -5,7 +5,9 @@ void HaSetup() {
   device.setManufacturer(HA_deviceManufacturer);
   device.setModel(HA_deviceModel);
   String URL = "http://" + IpAddress2String(WiFi.localIP());
-  device.setConfigurationUrl(URL.c_str());
+  char configUrl[30];  // Adjust size as needed, large enough to hold the URL
+  URL.toCharArray(configUrl, sizeof(configUrl));
+  device.setConfigurationUrl(configUrl);
   light.setName(HA_lightName);
   light.onStateCommand(onStateCommand);
   numbersensor.setName("Light");

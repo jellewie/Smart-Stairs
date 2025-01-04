@@ -7,13 +7,14 @@
 #error "Please check if the 'DOIT ESP32 DEVKIT V1' board is selected, which can be downloaded at https://dl.espressif.com/dl/package_esp32_index.json"
 #endif
 
+#include <WiFi.h>
 #include <FastLED.h>
 #include "WiFiManagerBefore.h"                                  //Define what options to use/include or to hook into WiFiManager
 #include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed
 #define WiFiManager_OTA                                         //Define if you want to use the Over The Air update page (/ota)
 #include <ArduinoHA.h>                                          //https://github.com/dawidchyrzynski/arduino-home-assistant/
 #define AverageAmount 8                                         //The amount of analog measurements to take an average from for the step sensor
-#include "Functions.h"
+#include "functions.h"
 
 IPAddress HA_BROKER_ADDR = IPAddress(0, 0, 0, 0);
 String HA_BROKER_USERNAME = "";
@@ -73,7 +74,7 @@ bool UpdateLEDs = true;                                         //If the LEDs ne
 bool LEDsEnabled = true;                                        //The current state of the LEDs
 bool TooBright = false;
 byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
-int LDRmax = 4096;                                              //Above this light/lux ignore the steps
+int16_t LDRmax = 4096;                                              //Above this light/lux ignore the steps
 CRGB LEDs[TotalLEDs];
 #define LED_TYPE WS2812B
 #include "WiFiManagerLater.h"
@@ -220,7 +221,7 @@ byte StepRead(byte Channel) {                                   //Return if a st
   byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
   return ReturnValue;
 }
-int ReadLDR() {
+int16_t ReadLDR() {
   static AVG LDR_Average = {};
   return 4096 - ReadAverage(analogRead(PAI_LDR), &LDR_Average); //Inverse so dark=0 and bright=4096
 }

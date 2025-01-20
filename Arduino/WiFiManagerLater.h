@@ -12,17 +12,14 @@ bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
         Value.toCharArray(Name, 16);                          return true;
       } break;
     case 1: {
-        if (HA_MQTT_Enabled)                                  return false; //Can only be changed before MQTT is enabled/settup
         IPAddress result = String2IpAddress(Value);
         if (result == IPAddress(0, 0, 0, 0))                  return false; //No valid IP
         HA_BROKER_ADDR           = result;                    return true;
       } break;
     case 2: {
-        if (HA_MQTT_Enabled)                                  return false; //Can only be changed before MQTT is enabled/settup
         HA_BROKER_USERNAME       = Value;                     return true;
       } break;
     case 3: {
-        if (HA_MQTT_Enabled)                                  return false; //Can only be changed before MQTT is enabled/settup
         HA_BROKER_PASSWORD       = Value;                     return true;
       } break;
     case 4: {

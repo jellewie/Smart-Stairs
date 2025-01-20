@@ -6,15 +6,16 @@ void handle_Info() {
                    "PAI_LDR raw= " + String(analogRead(PAI_LDR)) + " (not inversed/scaled!)\n"
                    "ReadLDR = " + String(ReadLDR()) + " dark=0 and bright=4096\n"
                    "LDRmax = " + String(LDRmax) + "\n"
-                   "TooBright = " + (digitalRead(TooBright) ? "FALSE" : "TRUE")  + "\n"
+                   "TooBright = " + (digitalRead(TooBright) ? "TRUE" : "FALSE")  + "\n"
                    "AverageAmount = " + String(AverageAmount) + "\n"
                    "HA_EveryXmsReconnect = " + String(HA_EveryXmsReconnect) + "ms = " + String(HA_EveryXmsReconnect / 60000) +  "m\n"
                    "HA_EveryXmsUpdate = " + String(HA_EveryXmsUpdate) + "ms = " + String(HA_EveryXmsUpdate / 60000) + "m\n"
                    "LEDSections/steps = " + String(LEDSections) + "\n"
                    "Direction = " + String(Direction) + "\n"
                    "lastStep = " + String(lastStep) + "\n"
-                   "LEDsEnabled=" + (LEDsEnabled ? "FALSE" : "TRUE") + "\n"
-                   "light.setState(LEDsEnabled, true)=" + (light.setState(LEDsEnabled, true) ? "FALSE" : "TRUE") + "\n";
+                   "LEDsEnabled = " + (LEDsEnabled ? "TRUE" : "FALSE") + "\n"
+                   "HA_MQTT_Enabled = " + (HA_MQTT_Enabled ? "TRUE" : "FALSE") + "\n"
+                   "light.setState(LEDsEnabled, true) = " + (light.setState(LEDsEnabled, true) ? "TRUE" : "FALSE") + "\n";
 
   Message += "\nSteps raw\n";
   for (byte i = 0; i < LEDSections; i++)

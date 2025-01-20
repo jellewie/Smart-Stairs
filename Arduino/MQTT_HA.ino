@@ -13,6 +13,7 @@ void HaSetup() {
   device.setConfigurationUrl(configUrl);
   light.setName(HA_lightName);
   light.onStateCommand(onStateCommand);
+  light.setIcon("mdi:stairs");
   numbersensor.setName("Light");
   numbersensor.setUnitOfMeasurement("lx");
   numbersensor.setIcon("mdi:brightness-5");

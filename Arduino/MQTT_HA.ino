@@ -1,11 +1,14 @@
 void HaSetup() {
+  if (HA_MQTT_Enabled) return;
   if (HA_BROKER_ADDR == IPAddress(0, 0, 0, 0)) return;          //Stop HA MQTT when no IP has been setup
+  if (HA_BROKER_USERNAME == "") return;
+  if (HA_BROKER_PASSWORD == "") return;
   device.setName(Name);
   device.setSoftwareVersion(HA_deviceSoftwareVersion);
   device.setManufacturer(HA_deviceManufacturer);
   device.setModel(HA_deviceModel);
-  String URL = "http://" + IpAddress2String(WiFi.localIP());
-  char configUrl[30];  // Adjust size as needed, large enough to hold the URL
+  static String URL = "http://" + IpAddress2String(WiFi.localIP());
+  static char configUrl[30];  // Adjust size as needed, large enough to hold the URL
   URL.toCharArray(configUrl, sizeof(configUrl));
   device.setConfigurationUrl(configUrl);
   light.setName(HA_lightName);
@@ -38,7 +41,7 @@ void HaLoop() {
   }
   WiFiManager.RunServer();
   if (HA_BROKER_ADDR == IPAddress(0, 0, 0, 0)) return;          //Stop HA MQTT when no IP has been setup
-  if (!HA_MQTT_Enabled) HaSetup();                              //Run setup if we haven't yet
+  HaSetup();                                                    //Run setup if we haven't yet
   mqtt.loop();
 }
 void onStateCommand(bool state, HALight* sender) {

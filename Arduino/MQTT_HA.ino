@@ -7,10 +7,10 @@ void HaSetup() {
   device.setSoftwareVersion(HA_deviceSoftwareVersion);
   device.setManufacturer(HA_deviceManufacturer);
   device.setModel(HA_deviceModel);
-  static String URL = "http://" + IpAddress2String(WiFi.localIP());
-  static char configUrl[30];  // Adjust size as needed, large enough to hold the URL
-  URL.toCharArray(configUrl, sizeof(configUrl));
-  device.setConfigurationUrl(configUrl);
+  // static String URL = "http://" + IpAddress2String(WiFi.localIP());
+  // static char configUrl[30];  // Adjust size as needed, large enough to hold the URL
+  // URL.toCharArray(configUrl, sizeof(configUrl));
+  //device.setConfigurationUrl(configUrl);
   light.setName(HA_lightName);
   light.onStateCommand(onStateCommand);
   light.setIcon("mdi:stairs");

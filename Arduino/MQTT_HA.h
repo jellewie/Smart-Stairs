@@ -7,7 +7,7 @@ String HA_BROKER_PASSWORD = "";
 #define HA_deviceModel "Smart-Stair"                            //Model
 #define HA_lightName "stairenabled"                             //Entity ID
 unsigned long HA_EveryXmsReconnect = 60 * 60 * 1000;            //On which interfall to check if WiFi still works
-#define HA_EveryXmsUpdate 60 * 1000                             //How often to send the LDR sensor value to HA
+unsigned long HA_EveryXmsUpdate = 60 * 1000;                    //How often to send the LDR sensor value to HA
 byte mac[] = {0x00, 0x10, 0xFA, 0x6E, 0x38, 0x4C};              //We need to tell HA we are a new device
 WiFiClient client;
 HADevice device(mac, sizeof(mac));

@@ -81,6 +81,7 @@ void setup() {
 }
 void loop() {
   HaLoop();
+  WiFiManager.RunServer();
   ReadLDR();                                                    //Keep the value updated
   switch (Mode) {
     case OFF: {

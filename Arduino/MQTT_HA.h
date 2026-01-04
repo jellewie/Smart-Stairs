@@ -80,7 +80,6 @@ void HaSetup() {
 }
 void HaLoop() {
   HaSetup();                                                    //Run setup if we haven't yet
-  WiFiManager.RunServer();
   if (!HA_MQTT_Enabled) return;
   static unsigned long LastTime;
   if (TickEveryXms(&LastTime, HA_EveryXmsReconnect))

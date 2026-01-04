@@ -48,3 +48,7 @@ bool TickEveryXms(unsigned long * _LastTime, unsigned long _Delay) {
   }
   return false;
 }
+int16_t ReadLDR() {
+  static AVG LDR_Average = {};
+  return 4096 - ReadAverage(analogRead(PAI_LDR), &LDR_Average); //Inverse so dark=0 and bright=4096
+}

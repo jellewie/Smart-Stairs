@@ -14,8 +14,7 @@ void handle_Info() {
                    "Direction = " + String(Direction) + "\n"
                    "lastStep = " + String(lastStep) + "\n"
                    "LEDsEnabled = " + (LEDsEnabled ? "TRUE" : "FALSE") + "\n"
-                   "HA_MQTT_Enabled = " + (HA_MQTT_Enabled ? "TRUE" : "FALSE") + "\n"
-                   "light.setState(LEDsEnabled, true) = " + (light.setState(LEDsEnabled, true) ? "TRUE" : "FALSE") + "\n";
+                   "HA_MQTT_Enabled = " + (HA_MQTT_Enabled ? "TRUE" : "FALSE") + "\n";
 
   Message += "\nSteps raw\n";
   for (byte i = 0; i < LEDSections; i++)

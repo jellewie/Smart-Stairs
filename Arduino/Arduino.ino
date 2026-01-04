@@ -12,28 +12,15 @@
 #include "WiFiManagerBefore.h"                                  //Define what options to use/include or to hook into WiFiManager
 #include "WiFiManager/WiFiManager.h"                            //Includes <WiFi> and <WebServer.h> and setups up 'WebServer server(80)' if needed
 #define WiFiManager_OTA                                         //Define if you want to use the Over The Air update page (/ota)
-#include <ArduinoHA.h>                                          //https://github.com/dawidchyrzynski/arduino-home-assistant/
 #define AverageAmount 8                                         //The amount of analog measurements to take an average from for the step sensor
+const byte PDO_S0 = 13;                                         //Connections to CD74HC4067
+const byte PDO_S1 = 27;                                         //^
+const byte PDO_S2 = 33;                                         //^
+const byte PDO_S3 = 25;                                         //^
+const byte PAI_Steps = 35;                                      //^
+const byte PDO_Enable = 32;                                     //^ LOW=Multiplexer EBABLED
+const byte PAI_LDR = 36;
 #include "functions.h"
-
-IPAddress HA_BROKER_ADDR = IPAddress(0, 0, 0, 0);
-String HA_BROKER_USERNAME = "";
-String HA_BROKER_PASSWORD = "";
-#define HA_deviceSoftwareVersion "1.1"                          //Device info - Firmware:
-#define HA_deviceManufacturer "JelleWho"                        //Manufacturer
-#define HA_deviceModel "Smart-Stair"                            //Model
-#define HA_lightName "stairenabled"                             //Entity ID
-unsigned long HA_EveryXmsReconnect = 60 * 60 * 1000;            //On which interfall to check if WiFi still works
-#define HA_EveryXmsUpdate 60 * 1000                             //How often to send the LDR sensor value to HA
-byte mac[] = {0x00, 0x10, 0xFA, 0x6E, 0x38, 0x4C};
-WiFiClient client;
-HADevice device(mac, sizeof(mac));
-HAMqtt mqtt(client, device);
-HALight light("smartStair");                                    //unique LighID used for the whole LED strip
-HASensorNumber numbersensor("ldr");                             //unique SensorNumberID used to send the LDR data to HA
-HANumber number("LDRmax");                                      //unique NumberID used to set a trigger setpoint from HA
-bool HA_MQTT_Enabled = false;                                   //If MQTT has runned the setup yet
-#define AnalogScaler pow(2,(12 - 8))                            //Since the ESP has an 10bit analog, but we use an 8bit, set the conversion factor here
 
 Step Stair[] = {Step{25},                                       //The steps and their LED section length
                 Step{27},
@@ -61,22 +48,16 @@ const byte ExtraDirection = 1;                                  //Amount of LEDs
 const byte PAO_LED = 5;                                         //To which pin the LED strip is attached to
 const byte LEDSections = sizeof(Stair) / sizeof(Stair[0]);      //The amount of steps
 const int TotalLEDs = LEDSections * 28;                         //The amount of LEDs in the stair
-const byte PDO_S0 = 13;                                         //Connections to CD74HC4067
-const byte PDO_S1 = 27;                                         //^
-const byte PDO_S2 = 33;                                         //^
-const byte PDO_S3 = 25;                                         //^
-const byte PAI_Steps = 35;                                      //^
-const byte PDO_Enable = 32;                                     //^ LOW=Multiplexer EBABLED
-const byte PAI_LDR = 36;
 enum DIRECTIONS {DOWN, UP};                                     //Just Enum this for an easier code reading
 bool Direction = UP;                                            //The direction the user is walking
 bool UpdateLEDs = true;                                         //If the LEDs needs an update
 bool LEDsEnabled = true;                                        //The current state of the LEDs
 bool TooBright = false;
 byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
-int16_t LDRmax = 4096;                                              //Above this light/lux ignore the steps
+int16_t LDRmax = 4096;                                          //Above this light/lux ignore the steps
 CRGB LEDs[TotalLEDs];
 #define LED_TYPE WS2812B
+#include "MQTT_HA.h" 
 #include "WiFiManagerLater.h"
 void setup() {
   pinMode(PDO_S0, OUTPUT);
@@ -218,10 +199,7 @@ byte StepRead(byte Channel) {                                   //Return if a st
   digitalWrite(PDO_S1, bitRead(Channel, 1));
   digitalWrite(PDO_S2, bitRead(Channel, 2));
   digitalWrite(PDO_S3, bitRead(Channel, 3));
+#define AnalogScaler pow(2,(12 - 8))                            //Since the ESP has an 10bit analog, but we use an 8bit, set the conversion factor here
   byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
   return ReturnValue;
-}
-int16_t ReadLDR() {
-  static AVG LDR_Average = {};
-  return 4096 - ReadAverage(analogRead(PAI_LDR), &LDR_Average); //Inverse so dark=0 and bright=4096
 }

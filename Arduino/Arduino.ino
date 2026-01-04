@@ -204,3 +204,7 @@ byte StepRead(byte Channel) {                                   //Return if a st
   byte ReturnValue = ReadAverage(analogRead(PAI_Steps) / AnalogScaler, &Stair[Channel].Average);
   return ReturnValue;
 }
+int16_t ReadLDR() {
+  static AVG LDR_Average = {};
+  return 4096 - ReadAverage(analogRead(PAI_LDR), &LDR_Average); //Inverse so dark=0 and bright=4096
+}

@@ -15,6 +15,7 @@ HAMqtt mqtt(client, device);
 HASelect HAMode("Mode");                                        //Dropdown menu to select mode
 HASensorNumber HALDR("ldr");                                    //unique SensorNumberID used to send the LDR data to HA
 HANumber HALDRMax("LDRmax");                                    //unique NumberID used to set a trigger setpoint from HA
+extern int16_t ReadLDR();                                       //Declaired later in Arduino.ino
 bool HA_MQTT_Enabled = false;                                   //If MQTT has runned the setup yet
 void onModeCommand(int8_t index, HASelect* sender) {
   if (index < 0 or index >= Modes_Amount)                       //Sanity check

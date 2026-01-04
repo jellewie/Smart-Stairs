@@ -1,3 +1,6 @@
+enum Modes {OFF, STAIRS};                                       //Just to make the code more clear to read, OFF=0 and ON=1 etc
+String ModesString[] = {"OFF", "STAIRS"};                       //ALL CAPS!
+const byte Modes_Amount = sizeof(ModesString) / sizeof(ModesString[0]);//Why filling this in if we can automate that? :)
 struct AVG {
   byte Counter;                                                 //Where we are in the array
   unsigned long PointTotal;                                     //The sum of all values in the array

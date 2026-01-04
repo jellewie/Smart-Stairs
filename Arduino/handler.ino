@@ -13,7 +13,7 @@ void handle_Info() {
                    "LEDSections/steps = " + String(LEDSections) + "\n"
                    "Direction = " + String(Direction) + "\n"
                    "lastStep = " + String(lastStep) + "\n"
-                   "LEDsEnabled = " + (LEDsEnabled ? "TRUE" : "FALSE") + "\n"
+                   "Mode  = " + String(Mode) + "\n"
                    "HA_MQTT_Enabled = " + (HA_MQTT_Enabled ? "TRUE" : "FALSE") + "\n";
 
   Message += "\nSteps raw\n";

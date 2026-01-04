@@ -51,11 +51,12 @@ const int TotalLEDs = LEDSections * 28;                         //The amount of 
 enum DIRECTIONS {DOWN, UP};                                     //Just Enum this for an easier code reading
 bool Direction = UP;                                            //The direction the user is walking
 bool UpdateLEDs = true;                                         //If the LEDs needs an update
-bool LEDsEnabled = true;                                        //The current state of the LEDs
 bool TooBright = false;
 byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
 int16_t LDRmax = 4096;                                          //Above this light/lux ignore the steps
 CRGB LEDs[TotalLEDs];
+int8_t Mode = STAIRS;                                           //Set the bootmode to be ON (STAIRS)
+int8_t LastMode = -1;
 #define LED_TYPE WS2812B
 #include "MQTT_HA.h" 
 #include "WiFiManagerLater.h"
@@ -75,46 +76,46 @@ void setup() {
   WiFiManager.Start();                                          //Run the wifi startup (and save results)
   WiFiManager.EnableSetup(true);                                //(runtime) Enable the settings, only enabled in APmode by default
   WiFiManager.OTA_Enabled = true;
-  HaSetup();
 }
 void loop() {
   HaLoop();
-  static bool OLD_LEDsEnabled = LEDsEnabled;
   ReadLDR();                                                    //Keep the value updated
-  if (StairIsOn() == false)                                     //If the stair is off
-    TooBright = (ReadLDR() > LDRmax) ? true : false;             //Update the TooBright state, this prevents the state from changing due to its own light
-  if (LEDsEnabled) {
-    if (TooBright == false) {
-      static unsigned long LastTime;
-      if (TickEveryXms(&LastTime, 1))
-        StairDepleteCheck();                                    //Deplete the LEDs when needed
-      bool UpdateState = UpdateSteps();
-      static bool LastUpdateSteps = !UpdateState;
-      if (UpdateState == false) {                               //Are we OFF?
-        if (UpdateState != LastUpdateSteps) {                   //Is there an update?
-          fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);       //Turn LEDs off
-          UpdateLEDs = true;                                    //Flag that we need to update the LEDs
+  switch (Mode) {
+    case OFF:{
+        if (Mode != LastMode) {                                 //If we just are just DISABLED
+          for (byte i = 0; i < LEDSections; i++)                //For each step
+            Stair[i].StayOnFor = 0;                             //Deplete it completly
+          FastLED.clear();
+          UpdateLEDs = true;
         }
-      } else {
-        if (UpdateState != LastUpdateSteps) {                   //Is there an update?
-          fill_solid(&(LEDs[0]), TotalLEDs, LEDColorIdle);      //Base color all LEDs as idle
-          UpdateLEDs = true;                                    //Flag that we need to update the LEDs
+    } break;
+    case STAIRS: {
+        if (StairIsOn() == false)                               //If the stair is off
+          TooBright = (ReadLDR() > LDRmax) ? true : false;      //Update the TooBright state, this prevents the state from changing due to its own light
+        if (TooBright == false) {
+          static unsigned long LastTime;
+          if (TickEveryXms(&LastTime, 1))
+            StairDepleteCheck();                                //Deplete the LEDs when needed
+          bool UpdateState = UpdateSteps();
+          static bool LastUpdateSteps = !UpdateState;
+          if (UpdateState == false) {                           //Are we OFF?
+            if (UpdateState != LastUpdateSteps) {               //Is there an update?
+              fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);   //Turn LEDs off
+              UpdateLEDs = true;                                //Flag that we need to update the LEDs
+            }
+          } else {
+            if (UpdateState != LastUpdateSteps) {               //Is there an update?
+              fill_solid(&(LEDs[0]), TotalLEDs, LEDColorIdle);  //Base color all LEDs as idle
+              UpdateLEDs = true;                                //Flag that we need to update the LEDs
+            }
+            for (byte i = 0; i < LEDSections; i++) {            //For each step
+              StairStepCheck(&Stair[i], i);                     //Check if a step is triggered
+            }
+          }
+          LastUpdateSteps = UpdateState;                        //Remember what this step state was for next time
         }
-        for (byte i = 0; i < LEDSections; i++) {                //For each step
-          StairStepCheck(&Stair[i], i);
-        }
-      }
-      LastUpdateSteps = UpdateState;                            //Remember what this step state was for next time
-    }
-  } else {
-    if (LEDsEnabled != OLD_LEDsEnabled) {                       //If we just are just DISABLED
-      for (byte i = 0; i < LEDSections; i++)                    //For each step
-        Stair[i].StayOnFor = 0;                                 //Deplete it completly
-      FastLED.clear();
-      UpdateLEDs = true;
-    }
+      } break;
   }
-  OLD_LEDsEnabled = LEDsEnabled;
   if (UpdateLEDs) {                                             //If the LEDs need an update
     FastLED.show();                                             //Update LEDs
     UpdateLEDs = false;                                         //Flag update as complete

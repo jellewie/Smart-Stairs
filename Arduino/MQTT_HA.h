@@ -12,13 +12,16 @@ byte mac[] = {0x00, 0x10, 0xFA, 0x6E, 0x38, 0x4C};              //We need to tel
 WiFiClient client;
 HADevice device(mac, sizeof(mac));
 HAMqtt mqtt(client, device);
-HALight HAlight("smartStair");                                  //unique LighID used for the whole LED strip
+HASelect HAMode("Mode");                                        //Dropdown menu to select mode
 HASensorNumber HALDR("ldr");                                    //unique SensorNumberID used to send the LDR data to HA
-HANumber number("LDRmax");                                      //unique NumberID used to set a trigger setpoint from HA
+HANumber HALDRMax("LDRmax");                                    //unique NumberID used to set a trigger setpoint from HA
 bool HA_MQTT_Enabled = false;                                   //If MQTT has runned the setup yet
-void onStateCommand(bool state, HALight* sender) {
-  LEDsEnabled = state;
-  sender->setState(state);                                      //Report state back to the Home Assistant
+void onModeCommand(int8_t index, HASelect* sender) {
+  if (index < 0 or index >= Modes_Amount)                       //Sanity check
+    return;
+  LastMode = -1;                                                //Make sure we init the new mode
+  Mode = index;
+  sender->setState(index);                                      //report the selected option back to the HA
 }
 void onNumberCommand(HANumeric number, HANumber* sender) {
   if (!number.isSet()) {
@@ -27,7 +30,6 @@ void onNumberCommand(HANumeric number, HANumber* sender) {
     LDRmax = number.toInt16();
   }
   sender->setState(LDRmax);                                     //Report the selected option back to the HA panel
-  HALDR.setValue(ReadLDR());
 }
 void HaSetup() {
   if (HA_MQTT_Enabled) return;
@@ -43,42 +45,43 @@ void HaSetup() {
   // URL.toCharArray(configUrl, sizeof(configUrl));
   //device.setConfigurationUrl(configUrl);
 
-  HAlight.setName(HA_lightName);
-  HAlight.onStateCommand(onStateCommand);
-  HAlight.setIcon("mdi:stairs");
+  String AvailableModes;
+  for (size_t i = 0; i < Modes_Amount; i++) {
+    if (i > 0) {
+        AvailableModes += ';';
+    }
+    AvailableModes += ModesString[i];
+  }
+  HAMode.setName("Mode");
+  HAMode.setOptions(AvailableModes.c_str());
+  HAMode.onCommand(onModeCommand);
+  HAMode.setIcon("mdi:stairs");
 
   HALDR.setName("Light");
   HALDR.setUnitOfMeasurement("lx");
   HALDR.setIcon("mdi:brightness-5");
 
-  number.onCommand(onNumberCommand);
-  number.setName("LDRmax");
-  number.setMin(0);
-  number.setMax(255);
-  number.setStep(1);
-  number.setRetain(true);
+  HALDRMax.onCommand(onNumberCommand);
+  HALDRMax.setName("LDRmax");
+  HALDRMax.setMin(0);
+  HALDRMax.setMax(4096);
+  HALDRMax.setStep(1);
+  HALDRMax.setRetain(true);
 
   mqtt.begin(HA_BROKER_ADDR, HA_BROKER_USERNAME.c_str(), HA_BROKER_PASSWORD.c_str());
   HA_MQTT_Enabled = true;                                       //Set this before HaLoop to avoid looping
 }
 void HaLoop() {
+  HaSetup();                                                    //Run setup if we haven't yet
+  WiFiManager.RunServer();
+  if (!HA_MQTT_Enabled) return;
   static unsigned long LastTime;
-  if (TickEveryXms(&LastTime, HA_EveryXmsReconnect)) {
-    if (WiFiManager.CheckAndReconnectIfNeeded(false)) {         //Try to connect to WiFi, but dont start ApMode
-      HaSetup();
-      HAlight.setState(LEDsEnabled, true);                      //(state, force)
-    }
-  }
-  static int8_t HALastLEDsEnabled = !LEDsEnabled;
-  if (HALastLEDsEnabled != LEDsEnabled) {                       //If the HA value is not the same as the current value
-    HALastLEDsEnabled = LEDsEnabled;
-    HAlight.setState(LEDsEnabled);
-  }
+  if (TickEveryXms(&LastTime, HA_EveryXmsReconnect))
+    WiFiManager.CheckAndReconnectIfNeeded(false);               //Try to connect to WiFi, but dont start ApMode
+  mqtt.loop();
+  HAMode.setState(Mode);
   static unsigned long LastTime2 = 0;
   if (TickEveryXms(&LastTime2, HA_EveryXmsUpdate)) {
     HALDR.setValue(ReadLDR());
   }
-  WiFiManager.RunServer();
-  HaSetup();                                                    //Run setup if we haven't yet
-  mqtt.loop();
 }

@@ -15,7 +15,9 @@ HAMqtt mqtt(client, device);
 HASelect HAMode("Mode");                                        //Dropdown menu to select mode
 HASensorNumber HALDR("ldr");                                    //unique SensorNumberID used to send the LDR data to HA
 HANumber HALDRMax("LDRmax");                                    //unique NumberID used to set a trigger setpoint from HA
+HABinarySensor HAStepDetected("StepDetected");
 extern int16_t ReadLDR();                                       //Declaired later in Arduino.ino
+extern bool UpdateSteps();                                      //Declaired later in Arduino.ino
 bool HA_MQTT_Enabled = false;                                   //If MQTT has runned the setup yet
 void onModeCommand(int8_t index, HASelect* sender) {
   if (index < 0 or index >= Modes_Amount)                       //Sanity check
@@ -69,6 +71,9 @@ void HaSetup() {
   HALDRMax.setStep(1);
   HALDRMax.setRetain(true);
 
+  HAStepDetected.setName("Step sensor");
+  HAStepDetected.setDeviceClass("motion");
+
   mqtt.begin(HA_BROKER_ADDR, HA_BROKER_USERNAME.c_str(), HA_BROKER_PASSWORD.c_str());
   HA_MQTT_Enabled = true;                                       //Set this before HaLoop to avoid looping
 }
@@ -85,4 +90,5 @@ void HaLoop() {
   if (TickEveryXms(&LastTime2, HA_EveryXmsUpdate)) {
     HALDR.setValue(ReadLDR());
   }
+  HAStepDetected.setState(UpdateSteps());
 }

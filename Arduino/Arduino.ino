@@ -22,21 +22,23 @@ const byte PDO_Enable = 32;                                     //^ LOW=Multiple
 const byte PAI_LDR = 36;
 #include "functions.h"
 
-Step Stair[] = {Step{25},                                       //The steps and their LED section length
-                Step{27},
-                Step{27},
-                Step{26},
-                Step{27},
-                Step{25},
-                Step{24},
-                Step{26},
-                Step{27},
-                Step{26},
-                Step{28},
-                Step{26},
-                Step{26},
-                Step{0}
-               };
+Step Stair[16] = {Step{0},                                     //The steps and their LED section length
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0},
+                  Step{0}
+                };
 const byte TriggerThreshold = 60;                               //The amount where the step should be considered occupied
 const int LEDTimeOn = 400;                                      //The time in ms that would set the minimum on-time of the step
 const int LEDTimeIdle = 200;                                    //The time in ms that would set the minimum idle-time of the step (not additive!)
@@ -47,7 +49,7 @@ CRGB LEDColorIdle = {1, 0, 0};                                  //^
 const byte ExtraDirection = 1;                                  //Amount of LEDs to turn on extra in the direction the user is going
 const byte PAO_LED = 5;                                         //To which pin the LED strip is attached to
 const byte LEDSections = sizeof(Stair) / sizeof(Stair[0]);      //The amount of steps
-const int TotalLEDs = LEDSections * 28;                         //The amount of LEDs in the stair
+const int TotalLEDs = LEDSections * 50;                         //The amount of LEDs in the stair
 enum DIRECTIONS {DOWN, UP};                                     //Just Enum this for an easier code reading
 bool Direction = UP;                                            //The direction the user is walking
 bool UpdateLEDs = true;                                         //If the LEDs needs an update

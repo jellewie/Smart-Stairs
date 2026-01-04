@@ -37,6 +37,19 @@ bool IsTrue(String input) {
     return true;
   return false;
 }
+bool StringIsDigit(String IN, char IgnoreCharA = '0', char IgnoreCharB = '0');
+bool StringIsDigit(String IN, char IgnoreCharA, char IgnoreCharB) {
+  //IgnoreChar can be used to ignore ',' or '.' or '-'
+  for (byte i = 0; i < IN.length(); i++) {
+    if (isDigit(IN.charAt(i))) {                                //If it is a digit, do nothing
+    } else if (IN.charAt(i) == IgnoreCharA) {                   //If it is IgnoreCharA, do nothing
+    } else if (IN.charAt(i) == IgnoreCharB) {                   //If it is IgnoreCharB, do nothing
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
 String IsTrueToString(bool input) {
   if (input)
     return "true";

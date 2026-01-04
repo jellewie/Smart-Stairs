@@ -32,6 +32,23 @@ bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
         if (Val < 0 or Val > 86400000)                        return false;
         HA_EveryXmsReconnect = Val;                           return true;
       } break;
+    default:     
+      uint8_t StepID = ValueID - 10; 
+      if (StepID < LEDSections) {                               //If its a step number
+        if (StringIsDigit(Value)) {                             //If its a valid amount
+          uint _amount = Value.toInt();
+          int _TotalLedsUsed = 0;
+          for (byte i = 0; i < LEDSections; i++)                //For each step
+            _TotalLedsUsed = _TotalLedsUsed + Stair[i].SectionLength ;//Sum up LEDs used
+          _TotalLedsUsed = _TotalLedsUsed - Stair[StepID].SectionLength + _amount; //Remove target step old amount and add new amount
+          if (_TotalLedsUsed <= TotalLEDs){
+            Stair[StepID].SectionLength = _amount;
+            return true;
+          }
+        }
+        return false;
+      }
+      break;
   }
   return false;                                                 //Report back that the ValueID is unknown, and we could not set it
 }
@@ -57,6 +74,11 @@ String WiFiManagerUser_Get_Value(byte ValueID, bool Safe, bool Convert) {
       break;
     case 4:  return String(LDRmax);                           break;
     case 5:  return String(HA_EveryXmsReconnect);             break;
+    default:
+      uint8_t StepID = ValueID - 10;
+      if (StepID <= LEDSections)                                //If its a step number
+        return String(Stair[StepID].SectionLength);
+      break;
   }
   return "";
 }

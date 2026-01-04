@@ -1,5 +1,5 @@
-enum Modes {OFF, STAIRS};                                       //Just to make the code more clear to read, OFF=0 and ON=1 etc
-String ModesString[] = {"OFF", "STAIRS"};                       //ALL CAPS!
+enum Modes {OFF, STAIRS, RAINBOW};                              //Just to make the code more clear to read, OFF=0 and ON=1 etc
+String ModesString[] = {"OFF", "STAIRS", "RAINBOW"};            //ALL CAPS!
 const byte Modes_Amount = sizeof(ModesString) / sizeof(ModesString[0]);//Why filling this in if we can automate that? :)
 struct AVG {
   byte Counter;                                                 //Where we are in the array

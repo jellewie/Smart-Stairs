@@ -84,7 +84,7 @@ void loop() {
   ReadLDR();                                                    //Keep the value updated
   switch (Mode) {
     case OFF:{
-        if (Mode != LastMode) {                                 //If we just are just DISABLED
+        if (Mode != LastMode) {                                 //If the mode just changed
           for (byte i = 0; i < LEDSections; i++)                //For each step
             Stair[i].StayOnFor = 0;                             //Deplete it completly
           FastLED.clear();
@@ -92,6 +92,8 @@ void loop() {
         }
     } break;
     case STAIRS: {
+        if (Mode != LastMode)                                   //If the mode just changed
+          FastLED.setBrightness(255);
         if (StairIsOn() == false)                               //If the stair is off
           TooBright = (ReadLDR() > LDRmax) ? true : false;      //Update the TooBright state, this prevents the state from changing due to its own light
         if (TooBright == false) {
@@ -117,6 +119,23 @@ void loop() {
           LastUpdateSteps = UpdateState;                        //Remember what this step state was for next time
         }
       } break;
+    case RAINBOW: {
+      if (Mode != LastMode)                                     //If the mode just changed
+        FastLED.setBrightness(16);
+      const byte RainbowSpeedMs = 30;                           //Animation speed
+      static unsigned long LastTime = 0;
+      if (TickEveryXms(&LastTime, RainbowSpeedMs)){
+        static byte RainbowHueOffset;
+        RainbowHueOffset++;                                     //Forward We March
+        for (byte step = 0; step < LEDSections; step++) {       //Spread rainbow evenly across steps
+          byte hue = RainbowHueOffset + (step * (255 / LEDSections));
+          CRGB color;
+          color.setHSV(hue, 255, 255);
+          fill_solid(&(LEDs[StartPos(step)]), Stair[step].SectionLength, color);
+        }
+        UpdateLEDs = true;
+      }
+    } break;
   }
   LastMode = Mode;
   if (UpdateLEDs) {                                             //If the LEDs need an update

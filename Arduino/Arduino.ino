@@ -97,8 +97,9 @@ void loop() {
           FastLED.setBrightness(255);
           for (byte i = 0; i < LEDSections; i++) {              //For each step
             Stair[i].StayOnFor = 0;                             //Clear timer
-          fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);       //Turn LEDs off
-          UpdateLEDs = true;
+            fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);       //Turn LEDs off
+            UpdateLEDs = true;
+          }
         }
         if (StairIsOn() == false)                               //If the stair is off
           TooBright = (ReadLDR() > LDRmax) ? true : false;      //Update the TooBright state, this prevents the state from changing due to its own light

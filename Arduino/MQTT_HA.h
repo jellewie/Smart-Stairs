@@ -19,6 +19,7 @@ HABinarySensor HAStepDetected("StepDetected");
 extern int16_t ReadLDR();                                       //Declaired later in Arduino.ino
 extern bool UpdateSteps();                                      //Declaired later in Arduino.ino
 bool HA_MQTT_Enabled = false;                                   //If MQTT has runned the setup yet
+bool HA_StepDetected = false;
 void onModeCommand(int8_t index, HASelect* sender) {
   if (index < 0 or index >= Modes_Amount)                       //Sanity check
     return;
@@ -90,5 +91,5 @@ void HaLoop() {
   if (TickEveryXms(&LastTime2, HA_EveryXmsUpdate)) {
     HALDR.setValue(ReadLDR());
   }
-  HAStepDetected.setState(UpdateSteps());
+  HAStepDetected.setState(HA_StepDetected);
 }

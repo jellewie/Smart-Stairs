@@ -124,10 +124,12 @@ void loop() {
   }
 }
 bool UpdateSteps() {                                            //Do we need an LED update?
+  HA_StepDetected = true;                                       //Set default to true, will be overwritten
   for (byte i = 0; i < LEDSections; i++) {
     if (StepRead(i) >= TriggerThreshold or Stair[i].StayOnFor > 0) //If an section is on, or needs to stay on for a bit longer
       return true;
   }
+  HA_StepDetected = false;
   return false;
 }
 void StairStepCheck(Step *ThisStep, byte _Section) {

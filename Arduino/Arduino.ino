@@ -118,6 +118,7 @@ void loop() {
         }
       } break;
   }
+  LastMode = Mode;
   if (UpdateLEDs) {                                             //If the LEDs need an update
     FastLED.show();                                             //Update LEDs
     UpdateLEDs = false;                                         //Flag update as complete

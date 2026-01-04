@@ -38,7 +38,7 @@ Step Stair[16] = {Step{0},                                     //The steps and t
                   Step{0},
                   Step{0},
                   Step{0}
-                };
+                 };
 const byte TriggerThreshold = 60;                               //The amount where the step should be considered occupied
 const int LEDTimeOn = 400;                                      //The time in ms that would set the minimum on-time of the step
 const int LEDTimeIdle = 200;                                    //The time in ms that would set the minimum idle-time of the step (not additive!)
@@ -60,7 +60,7 @@ CRGB LEDs[TotalLEDs];
 int8_t Mode = STAIRS;                                           //Set the bootmode to be ON (STAIRS)
 int8_t LastMode = -1;
 #define LED_TYPE WS2812B
-#include "MQTT_HA.h" 
+#include "MQTT_HA.h"
 #include "WiFiManagerLater.h"
 void setup() {
   pinMode(PDO_S0, OUTPUT);
@@ -83,14 +83,14 @@ void loop() {
   HaLoop();
   ReadLDR();                                                    //Keep the value updated
   switch (Mode) {
-    case OFF:{
+    case OFF: {
         if (Mode != LastMode) {                                 //If the mode just changed
           for (byte i = 0; i < LEDSections; i++)                //For each step
             Stair[i].StayOnFor = 0;                             //Deplete it completly
           FastLED.clear();
           UpdateLEDs = true;
         }
-    } break;
+      } break;
     case STAIRS: {
         if (Mode != LastMode)                                   //If the mode just changed
           FastLED.setBrightness(255);
@@ -120,22 +120,22 @@ void loop() {
         }
       } break;
     case RAINBOW: {
-      if (Mode != LastMode)                                     //If the mode just changed
-        FastLED.setBrightness(16);
-      const byte RainbowSpeedMs = 30;                           //Animation speed
-      static unsigned long LastTime = 0;
-      if (TickEveryXms(&LastTime, RainbowSpeedMs)){
-        static byte RainbowHueOffset;
-        RainbowHueOffset++;                                     //Forward We March
-        for (byte step = 0; step < LEDSections; step++) {       //Spread rainbow evenly across steps
-          byte hue = RainbowHueOffset + (step * (255 / LEDSections));
-          CRGB color;
-          color.setHSV(hue, 255, 255);
-          fill_solid(&(LEDs[StartPos(step)]), Stair[step].SectionLength, color);
+        if (Mode != LastMode)                                     //If the mode just changed
+          FastLED.setBrightness(16);
+        const byte RainbowSpeedMs = 30;                           //Animation speed
+        static unsigned long LastTime = 0;
+        if (TickEveryXms(&LastTime, RainbowSpeedMs)) {
+          static byte RainbowHueOffset;
+          RainbowHueOffset++;                                     //Forward We March
+          for (byte step = 0; step < LEDSections; step++) {       //Spread rainbow evenly across steps
+            byte hue = RainbowHueOffset + (step * (255 / LEDSections));
+            CRGB color;
+            color.setHSV(hue, 255, 255);
+            fill_solid(&(LEDs[StartPos(step)]), Stair[step].SectionLength, color);
+          }
+          UpdateLEDs = true;
         }
-        UpdateLEDs = true;
-      }
-    } break;
+      } break;
   }
   LastMode = Mode;
   if (UpdateLEDs) {                                             //If the LEDs need an update

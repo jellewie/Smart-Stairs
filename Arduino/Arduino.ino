@@ -127,14 +127,14 @@ void loop() {
         }
       } break;
     case RAINBOW: {
-        if (Mode != LastMode)                                     //If the mode just changed
+        if (Mode != LastMode)                                   //If the mode just changed
           FastLED.setBrightness(16);
-        const byte RainbowSpeedMs = 30;                           //Animation speed
+        const byte RainbowSpeedMs = 30;                         //Animation speed
         static unsigned long LastTime = 0;
         if (TickEveryXms(&LastTime, RainbowSpeedMs)) {
           static byte RainbowHueOffset;
-          RainbowHueOffset++;                                     //Forward We March
-          for (byte step = 0; step < LEDSections; step++) {       //Spread rainbow evenly across steps
+          RainbowHueOffset++;                                   //Forward we march
+          for (byte step = 0; step < LEDSections; step++) {     //Spread rainbow evenly across steps
             byte hue = RainbowHueOffset + (step * (255 / LEDSections));
             CRGB color;
             color.setHSV(hue, 255, 255);

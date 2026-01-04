@@ -52,7 +52,7 @@ void HaSetup() {
   String AvailableModes;
   for (size_t i = 0; i < Modes_Amount; i++) {
     if (i > 0) {
-        AvailableModes += ';';
+      AvailableModes += ';';
     }
     AvailableModes += ModesString[i];
   }

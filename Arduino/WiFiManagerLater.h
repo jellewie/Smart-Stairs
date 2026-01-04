@@ -32,25 +32,25 @@ bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
         if (Val < 0 or Val > 86400000)                        return false;
         HA_EveryXmsReconnect = Val;                           return true;
       } break;
-    default:     
-      uint8_t StepID = ValueID - 10; 
+    default:
+      uint8_t StepID = ValueID - 10;
       if (StepID < LEDSections) {                               //If its a step number
         if (StringIsDigit(Value)) {                             //If its a valid amount
           uint _amount = Value.toInt();
           int _TotalLedsUsed = 0;
           for (byte i = 0; i < LEDSections; i++)                //For each step
-            _TotalLedsUsed = _TotalLedsUsed + Stair[i].SectionLength ;//Sum up LEDs used
+            _TotalLedsUsed = _TotalLedsUsed + Stair[i].SectionLength; //Sum up LEDs used
           _TotalLedsUsed = _TotalLedsUsed - Stair[StepID].SectionLength + _amount; //Remove target step old amount and add new amount
-          if (_TotalLedsUsed <= TotalLEDs){
+          if (_TotalLedsUsed <= TotalLEDs) {
             Stair[StepID].SectionLength = _amount;
             return true;
           }
         }
         return false;
+        break;
       }
-      break;
   }
-  return false;                                                 //Report back that the ValueID is unknown, and we could not set it
+  return false;  //Report back that the ValueID is unknown, and we could not set it
 }
 String WiFiManagerUser_Get_Value(byte ValueID, bool Safe, bool Convert) {
   //if its 'Safe' to return the real value (for example the password will return '****' or '1234')
@@ -63,7 +63,7 @@ String WiFiManagerUser_Get_Value(byte ValueID, bool Safe, bool Convert) {
     case 2:  return HA_BROKER_USERNAME;                       break;
     case 3: {
         String Return_Value = "";
-        if (Safe)                                                 //If's it's safe to return password.
+        if (Safe)                                               //If's it's safe to return password.
           Return_Value += String(HA_BROKER_PASSWORD);
         else {
           for (byte i = 0; i < String(HA_BROKER_PASSWORD).length(); i++)
@@ -76,7 +76,7 @@ String WiFiManagerUser_Get_Value(byte ValueID, bool Safe, bool Convert) {
     case 5:  return String(HA_EveryXmsReconnect);             break;
     default:
       uint8_t StepID = ValueID - 10;
-      if (StepID <= LEDSections)                                //If its a step number
+      if (StepID < LEDSections)                                 //If its a step number
         return String(Stair[StepID].SectionLength);
       break;
   }

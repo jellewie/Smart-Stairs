@@ -147,15 +147,15 @@ void StairStepCheck(Step *ThisStep, byte _Section) {
     lastStep = _Section;
   }
 
-  int StartSection = _Section - 1;
+  int8_t StartSection = _Section - 1;
   if (Direction == DOWN) StartSection = StartSection - ExtraDirection;
-  StartSection = constrain(StartSection, 0, LEDSections);
+  StartSection = constrain(StartSection, 0, LEDSections - 1);
 
-  int EndSection = _Section + 1;
+  int8_t EndSection = _Section + 1;
   if (Direction == UP) EndSection = EndSection + ExtraDirection;
-  EndSection = constrain(EndSection, 0, LEDSections);
+  EndSection = constrain(EndSection, 0, LEDSections - 1);
 
-  for (int i = StartSection; i <= EndSection; i++) {            //For one step behind the user, and 1+extra steps before the user
+  for (int8_t i = StartSection; i <= EndSection; i++) {         //For one step behind the user, and 1+extra steps before the user
     if (Stair[i].StayOnFor < LEDTimeIdle) {                     //If we are in idle time territory
       Stair[i].StayOnFor = LEDTimeIdle;                         //(re)set the timer on how long the LEDs need to stay idle
       if (LEDs[StartPos(i)] != LEDColorNextOn) {                //If needed to update color
@@ -191,6 +191,7 @@ bool StairIsOn() {                                              //Check if the s
   return false;
 }
 int StartPos(byte Section) {                                    //Returns the position of the first LED of the section
+  if (Section >= LEDSections) return 0;
   int Counter = 0;
   for (byte i = 0; i < LEDSections; i++) {
     if (i == Section)
@@ -200,6 +201,7 @@ int StartPos(byte Section) {                                    //Returns the po
   return 0;                                                     //Section error, just return 0
 }
 byte StepRead(byte Channel) {                                   //Return if a step is occupied, we are using a CD74HC4067 here to extend IO
+  if (Channel >= LEDSections) return 0;
   digitalWrite(PDO_S0, bitRead(Channel, 0));
   digitalWrite(PDO_S1, bitRead(Channel, 1));
   digitalWrite(PDO_S2, bitRead(Channel, 2));

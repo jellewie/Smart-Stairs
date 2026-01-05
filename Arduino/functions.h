@@ -1,17 +1,7 @@
 enum Modes {OFF, STAIRS, RAINBOW};                              //Just to make the code more clear to read, OFF=0 and ON=1 etc
 String ModesString[] = {"OFF", "STAIRS", "RAINBOW"};            //ALL CAPS!
 const byte Modes_Amount = sizeof(ModesString) / sizeof(ModesString[0]);//Why filling this in if we can automate that? :)
-struct AVG {
-  byte Counter;                                                 //Where we are in the array
-  unsigned long PointTotal;                                     //The sum of all values in the array
-  int Point[AverageAmount];                                     //The array of all values
-};
-struct Step {
-  byte SectionLength;                                           //Amount of LEDs in this secion
-  bool State;                                                   //The current state, HIGH/LOW this is used for initializing
-  int StayOnFor;                                                //The time the step should still be light up
-  AVG Average;                                                  //The average analog value of the step
-};
+
 int ReadAverage(int Input, AVG *av) {                           //Returns the average of the last AverageAmount measurements.
   av->PointTotal -= av->Point[av->Counter];                     //Remove the old value from the total value
   av->Point[av->Counter] = Input;                               //Add the new number into the array
@@ -63,4 +53,10 @@ bool TickEveryXms(unsigned long * _LastTime, unsigned long _Delay) {
     return true;
   }
   return false;
+}
+void LED_Fill(int From, int Amount, CRGB Color, int MaxBound = TotalLEDs);
+void LED_Fill(int From, int Amount, CRGB Color, int MaxBound) {
+  if (From < 0 || Amount <= 0 || From >= MaxBound) return;  //(Protection out of array bounds) fully out of bounds
+  if (From + Amount > MaxBound) Amount = MaxBound - From;   //(Protection out of array bounds)  truncate amount if it would exceed the array
+  fill_solid(&(LEDs[From]), Amount, Color);
 }

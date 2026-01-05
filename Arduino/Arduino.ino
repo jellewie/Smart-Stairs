@@ -20,9 +20,19 @@ const byte PDO_S3 = 25;                                         //^
 const byte PAI_Steps = 35;                                      //^
 const byte PDO_Enable = 32;                                     //^ LOW=Multiplexer EBABLED
 const byte PAI_LDR = 36;
-#include "functions.h"
-
-Step Stair[16] = {Step{0},                                     //The steps and their LED section length
+const byte PAO_LED = 5;                                         //To which pin the LED strip is attached to
+struct AVG {
+  uint8_t Counter = 0;                                          //Where we are in the array
+  unsigned long PointTotal = 0;                                 //The sum of all values in the array
+  int Point[AverageAmount] = {0};                               //The array of all values
+};
+struct Step {
+  byte SectionLength;                                           //Amount of LEDs in this secion
+  bool State;                                                   //The current state, HIGH/LOW this is used for initializing
+  int StayOnFor;                                                //The time the step should still be light up
+  AVG Average;                                                  //The average analog value of the step
+};
+Step Stair[16] = {Step{0},                                      //The steps and their LED section length
                   Step{0},
                   Step{0},
                   Step{0},
@@ -39,6 +49,9 @@ Step Stair[16] = {Step{0},                                     //The steps and t
                   Step{0},
                   Step{0}
                  };
+const byte LEDSections = sizeof(Stair) / sizeof(Stair[0]);      //The amount of steps
+const int TotalLEDs = LEDSections * 30;                         //The amount of LEDs in the stair
+CRGB LEDs[TotalLEDs];
 const byte TriggerThreshold = 60;                               //The amount where the step should be considered occupied
 const int LEDTimeOn = 400;                                      //The time in ms that would set the minimum on-time of the step
 const int LEDTimeIdle = 200;                                    //The time in ms that would set the minimum idle-time of the step (not additive!)
@@ -47,16 +60,13 @@ CRGB LEDColorNextOn = {2, 1, 1};                                //^
 CRGB LEDColorOff = {0, 0, 0};                                   //^
 CRGB LEDColorIdle = {1, 0, 0};                                  //^
 const byte ExtraDirection = 1;                                  //Amount of LEDs to turn on extra in the direction the user is going
-const byte PAO_LED = 5;                                         //To which pin the LED strip is attached to
-const byte LEDSections = sizeof(Stair) / sizeof(Stair[0]);      //The amount of steps
-const int TotalLEDs = LEDSections * 50;                         //The amount of LEDs in the stair
 enum DIRECTIONS {DOWN, UP};                                     //Just Enum this for an easier code reading
 bool Direction = UP;                                            //The direction the user is walking
 bool UpdateLEDs = true;                                         //If the LEDs needs an update
 bool TooBright = false;
-byte lastStep = 0;                                              //The last known step that is triggered, used to calculate direction
+int8_t lastStep = 0;                                            //The last known step that is triggered, used to calculate direction
 int16_t LDRmax = 4096;                                          //Above this light/lux ignore the steps
-CRGB LEDs[TotalLEDs];
+#include "functions.h"
 int8_t Mode = STAIRS;                                           //Set the bootmode to be ON (STAIRS)
 int8_t LastMode = -1;
 #define LED_TYPE WS2812B
@@ -71,7 +81,7 @@ void setup() {
   digitalWrite(PDO_Enable, LOW);
   pinMode(PAI_Steps, INPUT);
   FastLED.addLeds<LED_TYPE, PAO_LED, GRB>(LEDs, TotalLEDs);
-  fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);
+  LED_Fill(0, TotalLEDs, LEDColorOff);
   FastLED.setBrightness(255);
   server.on("/info",        handle_Info);
   server.onNotFound(        handle_NotFound);                   //When a client requests an unknown URI
@@ -97,7 +107,7 @@ void loop() {
           FastLED.setBrightness(255);
           for (byte i = 0; i < LEDSections; i++)                //For each step
             Stair[i].StayOnFor = 0;                             //Clear timer
-          fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);       //Turn LEDs off
+          LED_Fill(0, TotalLEDs, LEDColorOff);                  //Turn LEDs off
           UpdateLEDs = true;
         }
         if (StairIsOn() == false)                               //If the stair is off
@@ -110,12 +120,12 @@ void loop() {
           static bool LastUpdateSteps = !UpdateState;
           if (UpdateState == false) {                           //Are we OFF?
             if (UpdateState != LastUpdateSteps) {               //Is there an update?
-              fill_solid(&(LEDs[0]), TotalLEDs, LEDColorOff);   //Turn LEDs off
+              LED_Fill(0, TotalLEDs, LEDColorOff);              //Turn LEDs off
               UpdateLEDs = true;                                //Flag that we need to update the LEDs
             }
           } else {
             if (UpdateState != LastUpdateSteps) {               //Is there an update?
-              fill_solid(&(LEDs[0]), TotalLEDs, LEDColorIdle);  //Base color all LEDs as idle
+              LED_Fill(0, TotalLEDs, LEDColorIdle);             //Base color all LEDs as idle
               UpdateLEDs = true;                                //Flag that we need to update the LEDs
             }
             for (byte i = 0; i < LEDSections; i++) {            //For each step
@@ -137,7 +147,7 @@ void loop() {
             byte hue = RainbowHueOffset + (step * (255 / LEDSections));
             CRGB color;
             color.setHSV(hue, 255, 255);
-            fill_solid(&(LEDs[StartPos(step)]), Stair[step].SectionLength, color);
+            LED_Fill(StartPos(step), Stair[step].SectionLength, color);
           }
           UpdateLEDs = true;
         }
@@ -185,14 +195,14 @@ void StairStepCheck(Step *ThisStep, byte _Section) {
     if (Stair[i].StayOnFor < LEDTimeIdle) {                     //If we are in idle time territory
       Stair[i].StayOnFor = LEDTimeIdle;                         //(re)set the timer on how long the LEDs need to stay idle
       if (LEDs[StartPos(i)] != LEDColorNextOn) {                //If needed to update color
-        fill_solid(&(LEDs[StartPos(i)]), Stair[i].SectionLength, LEDColorNextOn);
+        LED_Fill(StartPos(i), Stair[i].SectionLength, LEDColorNextOn);
         UpdateLEDs = true;                                      //Flag that we need to update the LEDs
       }
     }
   }
   Stair[_Section].StayOnFor = LEDTimeOn;                        //(re)set the timer on how long the LEDs need to stay on
   if (LEDs[StartPos(_Section)] != LEDColorOn) {                 //If needed to update color
-    fill_solid(&(LEDs[StartPos(_Section)]), Stair[_Section].SectionLength, LEDColorOn);
+    LED_Fill(StartPos(_Section), Stair[_Section].SectionLength, LEDColorOn);
     UpdateLEDs = true;                                          //Flag that we need to update the LEDs
   }
   Stair[_Section].State = true;
@@ -202,7 +212,7 @@ void StairDepleteCheck() {                                      //Deplete STAY-O
     if (Stair[i].StayOnFor > 0) {                               //If it needs to stay on
       Stair[i].StayOnFor -= 1;                                  //Deplete it a bit more
       if (Stair[i].StayOnFor <= 0) {                            //If we hit the bottum
-        fill_solid(&(LEDs[StartPos(i)]), Stair[i].SectionLength, LEDColorIdle); //Turn it to idle color
+        LED_Fill(StartPos(i), Stair[i].SectionLength, LEDColorIdle); //Turn it to idle color
         UpdateLEDs = true;                                      //Flag that we need to update the LEDs
       }
     }

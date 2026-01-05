@@ -20,7 +20,12 @@ bool WiFiManagerUser_Set_Value(byte ValueID, String Value) {
         HA_BROKER_USERNAME       = Value;                     return true;
       } break;
     case 3: {
-        HA_BROKER_PASSWORD       = Value;                     return true;
+        for (byte i = 0; i < String(Value).length(); i++) {
+          if (Value.charAt(i) != '*') {                         //if the password is set (and not just the '*****' we have given the client)
+            HA_BROKER_PASSWORD   = Value;                     return true;
+          }
+        }
+        return false;                                           //Not set, the password was just '*****'
       } break;
     case 4: {
         int Val = Value.toInt();

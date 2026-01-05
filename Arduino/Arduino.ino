@@ -27,9 +27,9 @@ struct AVG {
   int Point[AverageAmount] = {0};                               //The array of all values
 };
 struct Step {
-  byte SectionLength;                                           //Amount of LEDs in this secion
-  bool State;                                                   //The current state, HIGH/LOW this is used for initializing
-  int StayOnFor;                                                //The time the step should still be light up
+  uint8_t SectionLength = 0;                                    //Amount of LEDs in this secion
+  bool State = false;                                           //The current state, HIGH/LOW this is used for initializing
+  int StayOnFor = 0;                                            //The time the step should still be light up
   AVG Average;                                                  //The average analog value of the step
 };
 Step Stair[16] = {Step{0},                                      //The steps and their LED section length

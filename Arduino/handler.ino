@@ -1,4 +1,11 @@
 void handle_Info() {
+  String AvailableModes;
+  for (size_t i = 0; i < Modes_Amount; i++) {
+    if (i > 0) {
+      AvailableModes += ';';
+    }
+    AvailableModes += ModesString[i];
+  }
   String Message = "https://github.com/jellewie \n"
                    "Code compiled on " + String(__DATE__) + " " + String(__TIME__) + "\n"
                    "MAC adress = " + String(WiFi.macAddress()) + "\n"
@@ -15,7 +22,8 @@ void handle_Info() {
                    "lastStep = " + String(lastStep) + "\n"
                    "Mode  = " + String(Mode) + "\n"
                    "HA_MQTT_Enabled = " + (HA_MQTT_Enabled ? "TRUE" : "FALSE") + "\n"
-                   "HA_StepDetected = " + (HA_StepDetected ? "TRUE" : "FALSE") + "\n";
+                   "HA_StepDetected = " + (HA_StepDetected ? "TRUE" : "FALSE") + "\n"
+                   "AvailableModes = " + String(Modes_Amount) + "x = " + AvailableModes + "\n";
 
   Message += "\nSteps raw\n";
   for (byte i = 0; i < LEDSections; i++)

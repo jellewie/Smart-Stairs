@@ -14,7 +14,6 @@ void handle_Info() {
                    "ReadLDR = " + String(ReadLDR()) + " dark=0 and bright=4096\n"
                    "LDRmax = " + String(LDRmax) + "\n"
                    "TooBright = " + (digitalRead(TooBright) ? "TRUE" : "FALSE")  + "\n"
-                   "AverageAmount = " + String(AverageAmount) + "\n"
                    "HA_EveryXmsReconnect = " + String(HA_EveryXmsReconnect) + "ms = " + String(HA_EveryXmsReconnect / 60000) +  "m\n"
                    "HA_EveryXmsUpdate = " + String(HA_EveryXmsUpdate) + "ms = " + String(HA_EveryXmsUpdate / 60000) + "m\n"
                    "LEDSections/steps = " + String(LEDSections) + "\n"

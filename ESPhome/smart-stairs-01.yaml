@@ -1,0 +1,305 @@
+substitutions:
+  device_name: "smart-stairs-01"
+  project_name: "JelleWho.smart-stairs"   #By.ProjectName
+  project_version: "0.1"                  #Hardware
+  project_comment: "Our stairs"           #Name in ESPhome tab
+#https://github.com/jellewie/Smart-Stairs/blob/main/Arduino/Arduino.ino
+
+esphome:
+  name: "${device_name}"
+  comment: "${project_comment}"
+  project:
+    name: "${project_name}"
+    version: "${project_version}"
+  on_boot:
+    priority: -10
+    then:
+      - output.turn_off:
+          id: mux_enable
+      - light.turn_on:
+          id: stairs_led
+          brightness: 1%  # Blink on boot
+      - delay: 1s
+      - light.turn_on:
+          id: stairs_led
+          brightness: 100%
+          effect: SmartStairs
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+#web_server:        #[OPTIONAL] Example configuration entry
+#logger:            #[OPTIONAL] Enable logging
+api:                #Enable Home Assistant API https://esphome.io/components/api.html
+  reboot_timeout: 1h
+
+ota:                #Enable Over The Air updates
+  platform: esphome
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:               #Enable fallback hotspot (captive portal) in case wifi connection fails
+    ssid: "${device_name} FH"
+
+  reboot_timeout: 1h
+
+captive_portal:
+
+
+number:
+  - platform: template
+    name: "TriggerThreshold"
+    id: TriggerThreshold
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 255
+    step: 1
+    initial_value: 60
+    disabled_by_default: true
+  - platform: template
+    name: "LDRmax"
+    id: LDRmax
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 4095
+    step: 1
+    initial_value: 4095
+    disabled_by_default: true
+  - platform: template
+    name: "LEDTimeOn"
+    id: LEDTimeOn
+    optimistic: true
+    restore_value: true
+    min_value: 100
+    max_value: 5000
+    step: 50
+    unit_of_measurement: ms
+    initial_value: 750
+    disabled_by_default: true
+  - platform: template
+    name: "LEDTimeIdle"
+    id: LEDTimeIdle
+    optimistic: true
+    restore_value: true
+    min_value: 100
+    max_value: 5000
+    step: 50
+    unit_of_measurement: ms
+    initial_value: 500
+    disabled_by_default: true
+  - platform: template
+    name: "ExtraDirection"
+    id: ExtraDirection
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 5
+    step: 1
+    initial_value: 1
+    disabled_by_default: true
+
+globals:
+  - id: stay_on
+    type: int[13]
+    restore_value: no
+  - id: step_state
+    type: bool[13]
+    restore_value: no
+  - id: step_last
+    type: bool[13]
+    restore_value: no
+  - id: step_color
+    type: int[13]
+    restore_value: no
+  - id: last_step
+    type: int
+    initial_value: '0'
+  - id: direction_up
+    type: bool
+    initial_value: 'true'
+  - id: stair_active
+    type: bool
+    initial_value: 'false'
+  - id: section_lengths
+    type: int[13]
+    initial_value: '{25,27,27,26,27,25,24,26,27,26,28,26,26}'
+
+output:
+  - platform: gpio
+    pin: GPIO13
+    id: mux_s0
+  - platform: gpio
+    pin: GPIO27
+    id: mux_s1
+  - platform: gpio
+    pin: GPIO33
+    id: mux_s2
+  - platform: gpio
+    pin: GPIO25
+    id: mux_s3
+  - platform: gpio
+    pin: GPIO32
+    id: mux_enable
+
+sensor:
+  - platform: adc # https://esphome.io/components/sensor/adc.html
+    pin: GPIO36
+    name: "LUX"
+    update_interval: 60s
+    raw: true
+    attenuation: 12db
+    device_class: illuminance
+    unit_of_measurement: lx
+    id: ldr
+    filters:            #invert so 0=Dark, 4096=bright
+      - lambda: |-
+         return 4096 - x;
+  - platform: adc
+    pin: GPIO35
+    update_interval: never
+    raw: true
+    attenuation: 12db
+    id: step_input
+
+binary_sensor:
+  - platform: template
+    name: "Stair Active"
+    lambda: return id(stair_active);
+  - platform: template
+    name: "Direction Up"
+    lambda: return id(direction_up);
+    disabled_by_default: true
+
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812
+    pin: GPIO5
+    num_leds: 340
+    name: "LED Strip"
+    id: stairs_led
+    default_transition_length: 0s
+    restore_mode: ALWAYS_OFF
+    effects:
+      - random:
+      - pulse:
+      - strobe:
+      - flicker:
+      - addressable_rainbow:
+      - addressable_color_wipe:
+      - addressable_scan:
+      - addressable_twinkle:
+          twinkle_probability: 50%
+          progress_interval: 64ms
+      - addressable_random_twinkle:
+          twinkle_probability: 60%
+          progress_interval: 16ms
+      - addressable_fireworks:
+      - addressable_flicker:
+      - addressable_lambda:
+          name: SmartStairs
+          update_interval: 20ms
+          lambda: |-
+            static const uint16_t start_pos[13] = {0,25,52,79,105,132,157,181,207,234,260,288, 314};
+            Color OFF( 0, 0, 0);
+            Color IDLE(1, 0, 0);
+            Color NEXT(2, 1, 1);
+            Color MAIN(5, 2, 2);
+            bool active = false;
+            for(int i=0;i<13;i++) {
+              if(id(stay_on)[i] > 0) {
+                active = true;
+                break;
+              }
+            }
+            if(!active) {
+              it.all() = OFF;
+              return;
+            }
+            it.all() = IDLE;
+            for(int step=0; step<13; step++) {
+              Color c = IDLE;
+              if(id(step_color)[step] == 1)
+                c = MAIN;
+              if(id(step_color)[step] == 2)
+                c = NEXT;
+              for(int led=0; led<id(section_lengths)[step]; led++) {
+                it[start_pos[step] + led] = c;
+              }
+            }
+
+interval:
+  - interval: 10ms
+    then:
+      - lambda: |-
+          bool too_bright = id(ldr).state > id(LDRmax).state;
+          bool any_active = false;
+          for(int step=0; step<13; step++) {
+            id(mux_s0).set_state((step >> 0) & 1);
+            id(mux_s1).set_state((step >> 1) & 1);
+            id(mux_s2).set_state((step >> 2) & 1);
+            id(mux_s3).set_state((step >> 3) & 1);
+            delayMicroseconds(100);
+            id(step_input).update();
+            uint16_t raw = id(step_input).state;
+            uint8_t value = raw / 16;
+            static uint32_t last_log = 0;
+            if (millis() - last_log > 1000) {
+              ESP_LOGI("stairs", "step=%d raw=%u value=%u threshold=%.0f",step, raw, value, id(TriggerThreshold).state);
+              last_log = millis();
+            }
+            bool triggered = value >= id(TriggerThreshold).state;
+            id(step_state)[step] = triggered;
+            if(triggered || id(stay_on)[step] > 0)
+              any_active = true;
+            bool changed = id(step_last)[step] != triggered;
+            id(step_last)[step] = triggered;
+            if(too_bright)
+              continue;
+            if(!triggered)
+              continue;
+            if(changed) {
+              if(step != 0 &&
+                 step < id(last_step))
+                id(direction_up) = false;
+              else
+                id(direction_up) = true;
+              id(last_step) = step;
+            }
+            int start_section = step - 1;
+            int end_section = step + 1;
+            if(id(direction_up)) {
+              end_section +=
+                (int)id(ExtraDirection).state;
+            } else {
+              start_section -= (int)id(ExtraDirection).state;
+            }
+            start_section = std::max(0, start_section);
+            end_section = std::min(12, end_section);
+            for(int i=start_section; i<=end_section; i++) {
+              if(id(stay_on)[i] < id(LEDTimeIdle).state) {
+                id(stay_on)[i] =
+                  id(LEDTimeIdle).state;
+                id(step_color)[i] = 2;
+              }
+            }
+            id(stay_on)[step] = id(LEDTimeOn).state;
+            id(step_color)[step] = 1;
+          }
+          for(int i=0;i<13;i++) {
+            if(id(stay_on)[i] > 0) {
+              id(stay_on)[i] -= 10;
+              if(id(stay_on)[i] <= 0) {
+                id(stay_on)[i] = 0;
+                id(step_color)[i] = 0;
+              }
+            }
+          }
+          id(stair_active) = any_active;

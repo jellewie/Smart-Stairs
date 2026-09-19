@@ -189,6 +189,7 @@ light:
     id: stairs_led
     default_transition_length: 0s
     restore_mode: ALWAYS_OFF
+    icon: mdi:stairs
     effects:
       - random:
       - pulse:

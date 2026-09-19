@@ -50,6 +50,8 @@ wifi:
 
 captive_portal:
 
+dashboard_import:
+  package_import_url: github://jellewie/Smart-Stairs/ESPhome/ESPhome/smart-stairs-01.yaml
 
 number:
   - platform: template

@@ -190,6 +190,7 @@ light:
     default_transition_length: 0s
     restore_mode: ALWAYS_OFF
     icon: mdi:stairs
+    gamma_correct: 1.0
     effects:
       - random:
       - pulse:

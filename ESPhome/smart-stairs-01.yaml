@@ -136,16 +136,15 @@ globals:
 output:
   - platform: gpio
     pin: GPIO13
-    id: mux_s0
+    id: PDO_S0
   - platform: gpio
     pin: GPIO27
-    id: mux_s1
+    id: PDO_S1
   - platform: gpio
     pin: GPIO33
-    id: mux_s2
+    id: PDO_S2
   - platform: gpio
     pin: GPIO25
-    id: mux_s3
   - platform: gpio
     pin: GPIO32
     id: mux_enable
@@ -246,10 +245,11 @@ interval:
           bool too_bright = id(ldr).state > id(LDRmax).state;
           bool any_active = false;
           for(int step=0; step<13; step++) {
-            id(mux_s0).set_state((step >> 0) & 1);
-            id(mux_s1).set_state((step >> 1) & 1);
-            id(mux_s2).set_state((step >> 2) & 1);
-            id(mux_s3).set_state((step >> 3) & 1);
+          for(int step=0; step<14; step++) {
+            id(PDO_S0).set_state((step >> 0) & 1);
+            id(PDO_S1).set_state((step >> 1) & 1);
+            id(PDO_S2).set_state((step >> 2) & 1);
+            id(PDO_S3).set_state((step >> 3) & 1);
             delayMicroseconds(100);
             id(step_input).update();
             uint16_t raw = id(step_input).state;

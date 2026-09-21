@@ -254,11 +254,6 @@ interval:
             id(step_input).update();
             uint16_t raw = id(step_input).state;
             uint8_t value = raw / 16;
-            static uint32_t last_log = 0;
-            if (millis() - last_log > 1000) {
-              ESP_LOGI("stairs", "step=%d raw=%u value=%u threshold=%.0f",step, raw, value, id(TriggerThreshold).state);
-              last_log = millis();
-            }
             bool triggered = value >= id(TriggerThreshold).state;
             id(step_state)[step] = triggered;
             if(triggered || id(stay_on)[step] > 0)

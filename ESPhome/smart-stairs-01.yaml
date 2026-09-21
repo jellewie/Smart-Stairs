@@ -109,16 +109,16 @@ number:
 
 globals:
   - id: stay_on
-    type: int[13]
+    type: int[14]
     restore_value: no
   - id: step_state
-    type: bool[13]
+    type: bool[14]
     restore_value: no
   - id: step_last
-    type: bool[13]
+    type: bool[14]
     restore_value: no
   - id: step_color
-    type: int[13]
+    type: int[14]
     restore_value: no
   - id: last_step
     type: int
@@ -130,8 +130,8 @@ globals:
     type: bool
     initial_value: 'false'
   - id: section_lengths
-    type: int[13]
-    initial_value: '{25,27,27,26,27,25,24,26,27,26,28,26,26}'
+    type: int[14]
+    initial_value: '{25,27,27,26,27,25,24,26,27,26,28,26,26,0}'
 
 output:
   - platform: gpio
@@ -145,6 +145,7 @@ output:
     id: PDO_S2
   - platform: gpio
     pin: GPIO25
+    id: PDO_S3
   - platform: gpio
     pin: GPIO32
     id: mux_enable
@@ -210,13 +211,13 @@ light:
           name: SmartStairs
           update_interval: 20ms
           lambda: |-
-            static const uint16_t start_pos[13] = {0,25,52,79,105,132,157,181,207,234,260,288, 314};
+            static const uint16_t start_pos[14] = {0,25,52,79,105,132,157,181,207,234,260,288,314};
             Color OFF( 0, 0, 0);
             Color IDLE(1, 0, 0);
             Color NEXT(2, 1, 1);
             Color MAIN(5, 2, 2);
             bool active = false;
-            for(int i=0;i<13;i++) {
+            for(int i=0;i<14;i++) {
               if(id(stay_on)[i] > 0) {
                 active = true;
                 break;
@@ -227,7 +228,7 @@ light:
               return;
             }
             it.all() = IDLE;
-            for(int step=0; step<13; step++) {
+            for(int step=0; step<14; step++) {
               Color c = IDLE;
               if(id(step_color)[step] == 1)
                 c = MAIN;
@@ -244,7 +245,6 @@ interval:
       - lambda: |-
           bool too_bright = id(ldr).state > id(LDRmax).state;
           bool any_active = false;
-          for(int step=0; step<13; step++) {
           for(int step=0; step<14; step++) {
             id(PDO_S0).set_state((step >> 0) & 1);
             id(PDO_S1).set_state((step >> 1) & 1);
@@ -292,7 +292,7 @@ interval:
             id(stay_on)[step] = id(LEDTimeOn).state;
             id(step_color)[step] = 1;
           }
-          for(int i=0;i<13;i++) {
+          for(int i=0;i<14;i++) {
             if(id(stay_on)[i] > 0) {
               id(stay_on)[i] -= 10;
               if(id(stay_on)[i] <= 0) {
